@@ -15,24 +15,8 @@ Top-down криминальная игра про Арзамас 1991–1999 г�
 - Откройте `index.html` двойным кликом (Chrome, Safari, Firefox).
 - Либо локальный сервер: `python3 -m http.server 8000`, затем http://localhost:8000
 
-## Публикация на GitHub Pages
-
-1. Создайте пустой репозиторий на github.com, например `arzamas-90s`.
-2. Загрузите файлы `index.html`, `README.md`, `.nojekyll` (Add file → Upload files). Либо из папки проекта:
-
-```bash
-git init
-git add .
-git commit -m "Арзамас 90-е"
-git branch -M main
-git remote add origin https://github.com/<ваш-ник>/arzamas-90s.git
-git push -u origin main
-```
-
-3. Settings → Pages → Source: «Deploy from a branch», ветка `main`, папка `/ (root)` → Save.
+oy from a branch», ветка `main`, папка `/ (root)` → Save.
 4. Через 1–2 минуты игра откроется по адресу `https://<ваш-ник>.github.io/arzamas-90s/`, в том числе на телефоне. На iPhone: Поделиться → На экран «Домой».
-
-Важно: имя файла должно быть именно `index.html`, иначе GitHub Pages отдаст 404. Скрытый файл `.nojekyll` можно не загружать: без него сайт тоже работает.
 
 ## Управление
 
@@ -60,6 +44,4 @@ git push -u origin main
 
 По умолчанию играет синтезированная музыка. Свои треки (только с правом на использование, например CC0): в `index.html` найдите `const TRACKS={rock:"",pop:"",chanson:""}` и вставьте ссылки на mp3.
 
-## Свои спрайты
-
-Найдите `const ASSETS={player:null,enemy:null}` и подставьте `Image` 16×16 (взгляд вправо).
+Играйте в удовольствие!
