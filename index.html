@@ -715,7 +715,7 @@ let AC;function snd(f,d,type,v){try{AC=AC||new(window.AudioContext||window.webki
 
 /* ===== ИГРА ===== */
 let P,N=[],clock=540,E=[],B=[],SH=[],PK=[],BL=mk(WW,WH),cam={x:0,y:0,tx:0,ty:0,zm:1},msg="",msgT=0,hurt=0,deadT=0,tm=0,mi=0,si=0,mcar=null,cut=null,kills=0;
-let want=0,wantT=0,raidT=40,arrestT=0;
+let want=0,wantT=0,raidT=40,arrestT=0,copTheft=false;
 const AMMO=[];
 const YR=[1991,1991,1992,1993,1994,1995,1996,1997,1998,1999];
 const ENM=[
@@ -1064,7 +1064,7 @@ function initWorld(fresh){if(AREA)leave();C=[];C=genCars();if(fresh)BL.getContex
  const saved=S.garage;if(saved?.relocate){[saved.x,saved.y]=TG.gar;delete saved.relocate;save()}if(saved&&saved.m!==4&&Number.isInteger(saved.m)&&MD[saved.m]&&[saved.x,saved.y,saved.a,saved.hp].every(Number.isFinite)&&saved.x>=0&&saved.y>=0&&saved.x<=WW&&saved.y<=WH){C=C.filter(c=>c.ai||c.m!==saved.m||Math.hypot(c.x-saved.x,c.y-saved.y)>1);const c=mkCar(saved.m,saved.x,saved.y,saved.a,MD[saved.m].cols.includes(saved.col)?saved.col:MD[saved.m].cols[0]);c.hp=Math.max(0,Math.min(100,saved.hp));c.kit=(saved.kit|0)&3;c.br=[1,2].includes(saved.br)?saved.br:0;c.brRoll=true;c.saved=true;if(placeCar(c))C.push(c)}
  for(const k in ARS){ARS[k].seen=false;for(const n of ARS[k].n){n.dead=false;n.pn=0}ARS[k].bl.getContext("2d").clearRect(0,0,ARS[k].w,ARS[k].h)}
  const fp=frRoad(TG.start[0]+20,TG.start[1]+8),fedor=npc(fp[0],fp[1],"#605247");fedor.questwho="yard";fedor.god=true;fedor.fixed=true;fedor.calm=true;fedor.homeX=fp[0];fedor.homeY=fp[1];fedor.wt=0;fedor.wx=fp[0];fedor.wy=fp[1];fedor.idle=0;fedor.say=["Давно тебя не видел, Лёха.","Haven't seen you in a long time, Lyokha."];N.push(fedor);
- populateCrews();hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;playerMoved()}
+ populateCrews();hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;copTheft=false;playerMoved()}
 function startGame(fresh){initWorld(fresh);cam.sn=true;const i=S.mission;
  if(i>=MS.length){S.mission=MS.length;startMission(i);state="play";return}
  /* Пролог главы уже показали в концовке предыдущей — второй раз не повторяем. */
@@ -1145,14 +1145,15 @@ function raiseWant(n){if(AREA||!P||state!=="play")return;if(!want&&!C.some(c=>c.
 function patrolSpot(){let bi=-1,ba=0,bd=1e9;for(let i=0;i<RD.length;i++){const r=RD[i],st=Math.max(8,Math.round(r.len/24));for(let s=0;s<=r.len;s+=st){const q=roadPt(r,s),d=Math.abs(Math.hypot(q.x-P.x,q.y-P.y)-150);if(d<bd){bd=d;bi=i;ba=s}}}return bi<0?null:[bi,ba]}
 function doRaid(){if(C.filter(c=>c.pol).length>=3)return;const sp=patrolSpot();if(!sp)return;const c=mkPolice(0,0,sp[0],sp[1],sr()<.5?1:-1);setLane(c);if(carCol(c,c.x,c.y,c.a))return;c.raid=true;C.push(c);msg="Рейд ГАИ: на улицах патруль. Не гони.";msgT=4;snd(260,.3,"square",.05)}
 function arrestRelease(pay){S.rub-=pay;want=wantT=arrestT=0;resetInput();save();msg="Патруль отпустил. −"+pay+" ₽";msgT=3}
-function arrestJail(fee){want=0;wantT=0;fee=Math.min(fee||0,S.rub);S.rub-=fee;clock=450;if(P.car){P.car.drv=false;P.car.pax=false;P.car.v=0;P.car=null}const place=fr(...TG.police);P=newPlayer();clearTransient();resetInput();P.x=place[0];P.y=place[1];P.inv=1.5;playerMoved();cam.sn=true;save();
+function arrestJail(fee){want=0;wantT=0;copTheft=false;fee=Math.min(fee||0,S.rub);S.rub-=fee;clock=450;if(P.car){P.car.drv=false;P.car.pax=false;P.car.v=0;P.car=null}const place=fr(...TG.police);P=newPlayer();clearTransient();resetInput();P.x=place[0];P.y=place[1];P.inv=1.5;playerMoved();cam.sn=true;save();
  showCut([["N","Двое суток в КПЗ. Скамейка, хлорка и тишина.","Two days in the holding cell."],["N","Утром дежурный вернул документы. Дверь отдела открылась.","Released at dawn."]],()=>{msg="Вышел из КПЗ"+(fee>0?": −"+fee+" ₽":"");msgT=3})}
 function arrestCut(){if(state!=="play")return;
- const pay=120+60*want,enough=S.rub>=pay;
  S.tags=S.tags||{};S.tags.arrest=-1;
+ if(copTheft){copTheft=false;showCut([["N","Угон милицейской машины. Взятка не поможет — двое суток в КПЗ.","Stealing a police car. No bribe will help — two days in the holding cell."]],()=>arrestJail(150));return}
+ const pay=120+60*want,enough=S.rub>=pay;
  if(!enough){showCut([["N","Патруль задержал тебя. На взятку в "+pay+" ₽ денег не хватает."]],()=>arrestJail(150));return}
  const line=CH(P.car?"Инспектор подошёл к окну: «Документы. Мотор заглуши».":"Патруль остановился рядом: «Документы. Пройдёмте».","The patrol stops you and asks for papers.",
-  enough?"Договориться — "+pay+" ₽":"Договориться (денег мало)","Pay them off — "+pay+" ₽",
+  "Договориться — "+pay+" ₽","Pay them off — "+pay+" ₽",
   "Отсидеть в КПЗ","Sit it out in the cell",0,0,"arrest",
   [["Суёшь деньги. Протокол рвут. «Иди, пока не передумали».","You slip them the cash. The report is torn up. «Walk, before we change our minds»."],
    ["Отказываешься. Дверь КПЗ захлопывается.","You refuse. The cell door clangs shut."]]);
@@ -1175,7 +1176,7 @@ function act(){if(P.down>0)return;if(doMissionInteraction())return;if(doAreaInte
  if(P.car){const c=P.car;if(Math.abs(c.v)>8){msg="Сначала остановись";msgT=2;return}let ok=false;
   for(const s of[1,-1])for(const k of[MD[c.m].W/2+6,MD[c.m].W/2+10]){const nx=c.x-Math.sin(c.a)*k*s,ny=c.y+Math.cos(c.a)*k*s;if(!ok&&!col(nx,ny,4)&&los(c.x,c.y,nx,ny)){P.x=nx;P.y=ny;ok=true}}
   if(!ok){msg="Двери заблокированы";msgT=2;return}c.pax=false;c.drv=false;c.v=c.lat=0;P.car=null;P.vx=P.vy=0;P.impact=.8;playerMoved();return}
- const c=nearCar();if(c){if(c.pol){c.pol=false;c.ai=false;c.chase=false;c.siren=0;raiseWant(2);msg="Угон милицейской машины! Розыск: заплати или поедешь в КПЗ";msgT=3.5}if(c.m===4){if(!c.route||c.wait<=0){msg="Посадка только на остановке";msgT=2;return}if(S.rub>=5){S.rub-=5;c.pax=true;P.car=c;msg="Проезд 5 ₽";msgT=2}else{msg="Нет 5 ₽ на проезд";msgT=2;return}}else{c.drv=true;c.ai=false;c.v=c.lat=0;P.car=c;snd(180,.08,"square",.04)}P.x=c.x;P.y=c.y;P.vx=P.vy=0;playerMoved()}}
+ const c=nearCar();if(c){if(c.pol){c.pol=false;c.ai=false;c.chase=false;c.siren=0;copTheft=true;raiseWant(2);msg="Угон милицейской машины! Взяткой не отделаешься";msgT=3.5}if(c.m===4){if(!c.route||c.wait<=0){msg="Посадка только на остановке";msgT=2;return}if(S.rub>=5){S.rub-=5;c.pax=true;P.car=c;msg="Проезд 5 ₽";msgT=2}else{msg="Нет 5 ₽ на проезд";msgT=2;return}}else{c.drv=true;c.ai=false;c.v=c.lat=0;P.car=c;snd(180,.08,"square",.04)}P.x=c.x;P.y=c.y;P.vx=P.vy=0;playerMoved()}}
 function hitP(damage=34,impact=false){if(safeZone()||!P||(!impact&&P.inv>0)||P.hp<=0)return;P.hp=Math.max(0,P.hp-damage*(modes[S.level]||modes[1])[1]);P.inv=.4;SHK=.6;fx(P.x,P.y,"#a01010",8);hurt=.25;splat(P.x,P.y,10,false);snd(80,.2,"sawtooth",.08);
  if(P.hp<=0){if(P.car){P.car.drv=false;P.car.v=0;P.car=null}state="dead";deadT=0;splat(P.x,P.y,30,true);corpse(P.x,P.y,P.a,SK[S.skin])}}
 function respawn(){if(AREA)leave();cam.sn=true;const fee=Math.min(100,S.rub);S.rub-=fee;save();C=C.filter(c=>!c.drv);P=newPlayer();clearTransient();resetInput();const p=fr(P.x,P.y);P.x=p[0];P.y=p[1];playerMoved();hurt=0;
