@@ -548,36 +548,49 @@ function attachTraffic(c){let best=Infinity;for(const e of trafficEdges){const s
 function roadTraffic(c,dt,chase){
  if(c.hp<=0||c.br===2){c.v=0;return}
  if(!c.edge)attachTraffic(c);const e=c.edge,node=e.to;
- const anchor=lanePoint(e,c.edgeS,laneScratch);if(!c.turn&&Math.hypot(c.x-anchor.x,c.y-anchor.y)>4){const angle=Math.atan2(anchor.y-c.y,anchor.x-c.x),diff=Math.atan2(Math.sin(angle-c.a),Math.cos(angle-c.a));c.v=Math.min(18,c.v+12*dt);moveCar(c,dt,Math.max(-1.8*dt,Math.min(1.8*dt,diff)));return}
+ /* Возврат на полосу: без резкого доворота, иначе машины «змеятся» и цепляют бордюры. */
+ const anchor=lanePoint(e,c.edgeS,laneScratch);
+ if(!c.turn&&Math.hypot(c.x-anchor.x,c.y-anchor.y)>4){
+  /* Застрявшую не на полосе машину возвращаем на неё принудительно — иначе она не выедет. */
+  if(carCol(c,c.x,c.y,c.a)||!carCol(c,anchor.x,anchor.y,anchor.a)){c.x=anchor.x;c.y=anchor.y;c.a=anchor.a}
+  else{const da=Math.atan2(Math.sin(anchor.a-c.a),Math.cos(anchor.a-c.a));c.a+=da*Math.min(1,8*dt)}
+  c.v=Math.min(c.v,16);return}
  if(!c.nextEdge){const options=node.out.filter(o=>o.to!==e.from);
   if(!options.length)c.nextEdge=node.out[0];
   else if(chase){let best=options[0],bd=1e9;for(const o of options){const d=Math.hypot(o.to.x-P.x,o.to.y-P.y);if(d<bd){bd=d;best=o}}c.nextEdge=best}
   else c.nextEdge=options[(c.id+(c.trips||0))%options.length]}
  const n=c.nextEdge;if(!n){c.v=0;return}
- const close=e.len-c.edgeS<(node.out.length>2?140:65),otherOwner=node.owner&&node.owner!==c.id&&C.some(o=>o.id===node.owner&&o.ai&&!o.chase&&(o.edge?.to===node||o.route));
- let blocked=close&&otherOwner;
- if(!blocked&&!P.car&&ahead(c,P.x,P.y))blocked=true;
- if(!blocked)for(const o of C)if(o!==c&&ahead(c,o.x,o.y)){blocked=true;break}
- if(!blocked)for(const o of N)if(!o.dead&&ahead(c,o.x,o.y)){blocked=true;break}
+ const close=e.len-c.edgeS<(node.out.length>2?140:65);
+ /* Владелец перекрёстка сбрасывается, если машина уехала, угнана или сломана — иначе пробка навсегда. */
+ let otherOwner=false;
+ if(node.owner&&node.owner!==c.id){const own=C.find(o=>o.id===node.owner);
+  if(!own||own.drv||!own.ai||own.hp<=0||own.br===2||Math.hypot(own.x-node.x,own.y-node.y)>160)node.owner=0;else otherOwner=true}
+ const blocked=close&&otherOwner;
  if(close&&!blocked)node.owner=c.id;
- const bend=e.tx*n.tx+e.ty*n.ty,speed=chase?(close&&bend<.9?22:58):(close&&bend<.9?16:32),desired=blocked?0:speed;
+ const bend=e.tx*n.tx+e.ty*n.ty,speed=chase?(close&&bend<.9?22:58):(close&&bend<.9?16:32);
+ /* Если машина уже застряла в коллизии (растащило, спавн), даём ей выехать по полосе, а не блокируем навсегда. */
+ const stuck=carCol(c,c.x,c.y,c.a),desired=blocked?0:(stuck?speed:followLimit(c,speed));
  c.v=Math.max(0,c.v+Math.max(-85*dt,Math.min(12*dt,desired-c.v)));const ds=c.v*dt;if(!ds)return;
  const q=laneScratch;let s=c.edgeS,t=c.turn;
  if(t){const u=Math.min(1,t.u+ds/t.len),v=1-u;q.x=v*v*t.ax+2*v*u*t.cx+u*u*t.bx;q.y=v*v*t.ay+2*v*u*t.cy+u*u*t.by;q.a=Math.atan2(v*(t.cy-t.ay)+u*(t.by-t.cy),v*(t.cx-t.ax)+u*(t.bx-t.cx));s=u}
  else{s=Math.min(e.len-e.trim,s+ds);lanePoint(e,s,q)}
- if(carCol(c,q.x,q.y,q.a)){c.v=0;return}
+ /* Коллизия: не телепортируем машину и не обнуляем скорость резко — плавно тормозим
+    (через followLimit она остановится заранее), а застрявшую машину пропускаем на выезд. */
+ if(!stuck&&carCol(c,q.x,q.y,q.a)){c.v=Math.max(0,c.v-200*dt);return}
  c.x=q.x;c.y=q.y;c.a=q.a;c.lat=0;
  if(t){t.u=s;if(s>=1){node.owner=0;c.edge=n;c.edgeS=n.trim;c.nextEdge=null;c.turn=null;c.trips=(c.trips||0)+1}}
- else{c.edgeS=s;if(s>=e.len-e.trim){if(otherOwner){c.v=0;return}node.owner=c.id;const b=lanePoint(n,n.trim,{}),control=turnControl(q.x,q.y,b.x,b.y,e.tx,e.ty,n.tx,n.ty),cx=control.x,cy=control.y;c.turn={ax:q.x,ay:q.y,bx:b.x,by:b.y,cx,cy,u:0,len:Math.max(1,Math.hypot(q.x-cx,q.y-cy)+Math.hypot(b.x-cx,b.y-cy))}}}}
+ else{c.edgeS=s;if(s>=e.len-e.trim){if(otherOwner){c.v=Math.max(0,c.v-200*dt);return}node.owner=c.id;const b=lanePoint(n,n.trim,{}),control=turnControl(q.x,q.y,b.x,b.y,e.tx,e.ty,n.tx,n.ty),cx=control.x,cy=control.y;c.turn={ax:q.x,ay:q.y,bx:b.x,by:b.y,cx,cy,u:0,len:Math.max(1,Math.hypot(q.x-cx,q.y-cy)+Math.hypot(b.x-cx,b.y-cy))}}}}
 function bindRoad(c){let bd=1e9,bi=0,ba=0;for(let i=0;i<RD.length;i++){const r=RD[i],st=Math.max(8,Math.round(r.len/24));for(let s=0;s<=r.len;s+=st){const q=roadPt(r,s),dx=q.x-c.x,dy=q.y-c.y,d=dx*dx+dy*dy;if(d<bd){bd=d;bi=i;ba=s}}}c.rp=bi;c.al=ba;c.dir=c.dir||1}
 function mkPolice(x,y,rp,al,dir){const c=mkCar(3,x,y,0,"#e9edf2");c.ai=true;c.pol=true;c.rp=rp;c.al=al;c.dir=dir;c.siren=0;c.chase=false;c.jcd=0;return c}
 function genCars(){sd=77;const a=[];for(const n of trafficNodes.values())n.owner=0;
  const bus=mkCar(4,0,0,0,MD[4].cols[0]);bus.ai=true;bus.route=true;bus.al=busStops[0];bus.stopIndex=0;bus.wait=7;busPose(bus,bus.al);a.push(bus);
- for(let n=0,t=0;n<9&&t<400;t++){const r=RD[sr()*RD.length|0],q=roadPt(r,40+sr()*(r.len-80)),side=sr()<.5?-1:1,x=q.x-q.ty*side*(r.w/2+13),y=q.y+q.tx*side*(r.w/2+13);
+ /* Машин в движении на 20% больше: 9 → 13 (всего с автобусом, AIM-машинами и патрулями было 20, стало 24). */
+ for(let n=0,t=0;n<13&&t<600;t++){const r=RD[sr()*RD.length|0],q=roadPt(r,40+sr()*(r.len-80)),side=sr()<.5?-1:1,x=q.x-q.ty*side*(r.w/2+13),y=q.y+q.tx*side*(r.w/2+13);
   if(Math.hypot(x-TG.start[0],y-TG.start[1])<90||Object.values(TG).some(q=>Math.hypot(x-q[0],y-q[1])<75)||col(x,y,9))continue;
   const m=rm(),angle=Math.atan2(q.ty,q.tx)+(sr()<.5?0:Math.PI),w=Math.abs(Math.cos(angle))*MD[m].L+Math.abs(Math.sin(angle))*MD[m].W,h=Math.abs(Math.sin(angle))*MD[m].L+Math.abs(Math.cos(angle))*MD[m].W;if(roadOverlaps(x-w/2,y-h/2,w,h,3))continue;a.push(mkCar(m,x,y,angle,pick(MD[m].cols)));n++}
  const AIM=[0,1,3,2,6,0];
- for(let i=0;i<AIM.length+4;i++){const police=i>=AIM.length,m=police?3:AIM[i],c=police?mkPolice(0,0,0,0,1):mkCar(m,0,0,0,pick(MD[m].cols));c.ai=true;c.dir=i%2?1:-1;
+ /* Патрульных на 40% меньше: было 4, стало 2. */
+ for(let i=0;i<AIM.length+2;i++){const police=i>=AIM.length,m=police?3:AIM[i],c=police?mkPolice(0,0,0,0,1):mkCar(m,0,0,0,pick(MD[m].cols));c.ai=true;c.dir=i%2?1:-1;
  for(let t=0;t<200;t++){c.rp=sr()*RD.length|0;c.al=90+sr()*Math.max(1,RD[c.rp].len-180);setLane(c);if(ROADJ[c.rp].some(j=>Math.abs(j.al-c.al)<90)||a.some(o=>Math.hypot(c.x-o.x,c.y-o.y)<85))continue;a.push(c);break}}
  const previous=C,accepted=[];C=accepted;for(const c of a)if(!carCol(c,c.x,c.y,c.a))accepted.push(c);C=previous;return accepted}
 
@@ -744,7 +757,9 @@ function moveCar(c,dt,turn=0){
    if(o&&Number.isInteger(o.m)){ovx=Math.cos(o.a)*o.v-Math.sin(o.a)*o.lat;ovy=Math.sin(o.a)*o.v+Math.cos(o.a)*o.lat;inv=1/MD[o.m].mass}
    const vn=(vx-ovx)*nx2+(vy-ovy)*ny2;
    if(vn<0){const j=-(1+.16)*vn/(1/m.mass+inv);velocity(c,vx+j*nx2/m.mass,vy+j*ny2/m.mass);
-    c.hp=Math.max(0,c.hp-Math.abs(vn)*.07);if(inv){velocity(o,ovx-j*nx2*inv,ovy-j*ny2*inv);o.ai=false;o.hp=Math.max(0,o.hp-Math.abs(vn)*.07)}
+    c.hp=Math.max(0,c.hp-Math.abs(vn)*.07);if(inv){velocity(o,ovx-j*nx2*inv,ovy-j*ny2*inv);
+     /* ДТП: машина трафика встаёт на 5 с, затем снова едет (раньше ИИ выключался навсегда). */
+     if(o.ai)o.stun=5;o.hp=Math.max(0,o.hp-Math.abs(vn)*.07)}
     if(Math.abs(vn)>15){fx(c.x,c.y,"#c3ae77",3);SHK=Math.max(SHK,.2);c.dmgCool=3;if(o&&Number.isInteger(o.m))o.dmgCool=3}}}
   carImpact(c,P,h);for(const n of N)carImpact(c,n,h);for(const e of E)carImpact(c,e,h);
   for(const p of PROPS)if(inCar(c,p.x,p.y,p.r)){p.vx=vx*m.mass/(m.mass+p.mass);p.vy=vy*m.mass/(m.mass+p.mass);mv(p,p.vx*h,p.vy*h)}
@@ -916,7 +931,7 @@ function updN(dt){for(const n of N){if(n.dead)continue;if(n.fixed){if(Math.hypot
  else if(stepN(n,-my,mx)||stepN(n,my,-mx))n.sw+=dt*sp/3;
  else{n.dir*=-1;n.a+=1.6;continue}
  if(Math.abs(n.x-ox)+Math.abs(n.y-oy)<.001){n.dir*=-1;if(n.pn>0)n.a+=1.6}}}
-function killN(n){if(safeZone()||n.dead)return;n.dead=true;const gn=3+(rnd(25)|0);S.rub+=gn;ft(n.x,n.y,"+"+gn+" ₽","#e8c060");SHK=Math.max(SHK,.2);splat(n.x,n.y,16,true);person(BL.getContext("2d"),n.x,n.y,rnd(6.28),n.k,0,true);snd(90,.15,"sawtooth",.06);noise(n.x,n.y,120);raiseWant(1)}
+function killN(n){if(safeZone()||n.dead||n.god)return;n.dead=true;const gn=3+(rnd(25)|0);S.rub+=gn;ft(n.x,n.y,"+"+gn+" ₽","#e8c060");SHK=Math.max(SHK,.2);splat(n.x,n.y,16,true);person(BL.getContext("2d"),n.x,n.y,rnd(6.28),n.k,0,true);snd(90,.15,"sawtooth",.06);noise(n.x,n.y,120);raiseWant(1)}
 let mOn=S.music!==false,mI=null,mS=0,au=null;
 const TRACKS={rock:"",pop:"",chanson:""}; // сюда можно вставить ссылки на mp3 без авторских прав
 function styleNow(){if(AREA)return AREA.k==="shop"?"pop":"chanson";return["Пландина","АПЗ","Девятого Мая"].includes(lastD)?"rock":["Центр","Соборная площадь","Автостанция"].includes(lastD)?"pop":"chanson"}
@@ -1025,19 +1040,22 @@ function endScreen(){title(" ");
  btn("В МЕНЮ",30,278,120,22,()=>{state="menu"})}
 
 function newPlayer(){return{x:TG.start[0],y:TG.start[1],a:-Math.PI/2,hp:100,sta:100,dash:0,dashSta:0,dcd:0,vx:0,vy:0,down:0,impact:0,regionCell:-1,stepNoise:0,w:0,am:WP.map((_,i)=>i===0?(modes[S.level]||modes[1])[2]:0),cd:0,mcd:0,sw:0,inv:0,mf:0,sw2:0,car:null}}
-function placeCar(c){const x=c.x,y=c.y;for(let r=0;r<=96;r+=8)for(let i=0;i<12;i++){const nx=x+Math.cos(i*Math.PI/6)*r,ny=y+Math.sin(i*Math.PI/6)*r;if(!carCol(c,nx,ny,c.a)){c.x=nx;c.y=ny;return true}}return false}
+function placeCar(c,maxR=96){const x=c.x,y=c.y;for(let r=0;r<=maxR;r+=8)for(let i=0;i<12;i++){const nx=x+Math.cos(i*Math.PI/6)*r,ny=y+Math.sin(i*Math.PI/6)*r;if(!carCol(c,nx,ny,c.a)){c.x=nx;c.y=ny;return true}}return false}
 function initWorld(fresh){if(AREA)leave();C=[];C=genCars();if(fresh)BL.getContext("2d").clearRect(0,0,WW,WH);P=newPlayer();clearTransient();resetInput();PK=AMMO.map(a=>({x:a[0],y:a[1],t:false}));N=genN();PROPS=[];
  for(let i=0;i<12;i++){const d=DOORS[i%DOORS.length],q=fr(d.x+20+(i%3)*10,d.y+20);PROPS.push({x:q[0],y:q[1],vx:0,vy:0,mass:22,r:3})}
  const saved=S.garage;if(saved?.relocate){[saved.x,saved.y]=TG.gar;delete saved.relocate;save()}if(saved&&saved.m!==4&&Number.isInteger(saved.m)&&MD[saved.m]&&[saved.x,saved.y,saved.a,saved.hp].every(Number.isFinite)&&saved.x>=0&&saved.y>=0&&saved.x<=WW&&saved.y<=WH){C=C.filter(c=>c.ai||c.m!==saved.m||Math.hypot(c.x-saved.x,c.y-saved.y)>1);const c=mkCar(saved.m,saved.x,saved.y,saved.a,MD[saved.m].cols.includes(saved.col)?saved.col:MD[saved.m].cols[0]);c.hp=Math.max(0,Math.min(100,saved.hp));c.kit=(saved.kit|0)&3;c.br=[1,2].includes(saved.br)?saved.br:0;c.brRoll=true;c.saved=true;if(placeCar(c))C.push(c)}
  for(const k in ARS){ARS[k].seen=false;for(const n of ARS[k].n){n.dead=false;n.pn=0}ARS[k].bl.getContext("2d").clearRect(0,0,ARS[k].w,ARS[k].h)}
- const fp=frRoad(TG.start[0]+20,TG.start[1]+8),fedor=npc(fp[0],fp[1],"#605247");fedor.questwho="yard";fedor.fixed=true;fedor.calm=true;fedor.homeX=fp[0];fedor.homeY=fp[1];fedor.wt=0;fedor.wx=fp[0];fedor.wy=fp[1];fedor.idle=0;fedor.say=["Давно тебя не видел, Лёха.","Haven't seen you in a long time, Lyokha."];N.push(fedor);
+ const fp=frRoad(TG.start[0]+20,TG.start[1]+8),fedor=npc(fp[0],fp[1],"#605247");fedor.questwho="yard";fedor.god=true;fedor.fixed=true;fedor.calm=true;fedor.homeX=fp[0];fedor.homeY=fp[1];fedor.wt=0;fedor.wx=fp[0];fedor.wy=fp[1];fedor.idle=0;fedor.say=["Давно тебя не видел, Лёха.","Haven't seen you in a long time, Lyokha."];N.push(fedor);
  populateCrews();hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;playerMoved()}
 function startGame(fresh){initWorld(fresh);cam.sn=true;const i=S.mission;if(i>=MS.length){startMission(i);state="play"}else showCut(mcut(i,"pre"),()=>startMission(i))}
-function startMission(i){mi=i;si=0;E=[];C=C.filter(c=>!c.mc);mcar=null;const m=MS[i];state="play";
+function startMission(i){mi=i;si=0;E=[];
+ /* Машину, в которой сидит игрок, оставляем на карте: иначе он остаётся в невидимом авто. */
+ if(P&&P.car){P.car.mc=false;if(!C.includes(P.car))C.push(P.car)}
+ C=C.filter(c=>!c.mc);mcar=null;const m=MS[i];state="play";
  for(const n of N)if(n.questwho==="yard")n.dead=i!==0;
  if(!m){msg="Открытый мир: катайся по Арзамасу";msgT=5;return}for(const s of m.steps)delete s.done;
  E=m.sp.map((e,j)=>({x:e[0],y:e[1],ax:e[0],ay:e[1],bx:e[2],by:e[3],a:0,hp:i>=2?2:1,tg:true,st:0,cd:1+rnd(1),sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0}));
- if(m.car){mcar=mkCar(m.car[2],m.car[0],m.car[1],Math.PI/2,m.car[3]);mcar.mc=true;if(placeCar(mcar))C.push(mcar)}
+ if(m.car){mcar=mkCar(m.car[2],m.car[0],m.car[1],Math.PI/2,m.car[3]);mcar.mc=true;placeCar(mcar,240);C.push(mcar)}
  msg=(S.lang==="en"?"Ch.":"Гл.")+(i+1)+" "+YR[i]+" · "+mname(i);msgT=4}
 function showCut(lines,done){const pages=[];for(const line of lines){if(line.o){pages.push(line);continue}const ru=wrap(line[1]||"",24),en=wrap(line[2]||line[1]||"",24),count=Math.max(1,Math.ceil((S.lang==="en"?en:ru).length/5));for(let i=0;i<count;i++)pages.push([line[0],ru.slice(i*5,i*5+5).join(" "),en.slice(i*5,i*5+5).join(" ")])}if(!pages.length){state="play";if(done)done();return}cut={l:pages,i:0,done};state="cut"}
 function nextLine(){if(!cut)return;cut.i++;if(cut.i>=cut.l.length){const d=cut.done;cut=null;state="play";if(d)d()}}
@@ -1139,15 +1157,23 @@ function inputs(){let mx=0,my=0;
  if(pad.on&&(Math.abs(pad.lx)>.2||Math.abs(pad.ly)>.2)){mx=pad.lx;my=pad.ly;arrowAim=true}
  if(stick.id!==null){const dx=stick.x-stick.ox,dy=stick.y-stick.oy,l=Math.hypot(dx,dy);if(l>4){const m=Math.min(l,22)/22;mx=dx/l*m;my=dy/l*m}}
  const l=Math.hypot(mx,my);if(l>1){mx/=l;my/=l}inputVector[0]=mx;inputVector[1]=my;inputVector[2]=Math.min(l,1);return inputVector}
-function ahead(c,x,y){const dx=x-c.x,dy=y-c.y,co=Math.cos(c.a),si=Math.sin(c.a),along=dx*co+dy*si;return along>0&&along<MD[c.m].L/2+12+c.v*c.v/160&&Math.abs(-dx*si+dy*co)<MD[c.m].W/2+4}
+/* Плавное следование: скорость ограничивается расстоянием до лидера, без резких «стоп-поехали». */
+function followLimit(c,speed){const m=MD[c.m],co=Math.cos(c.a),si=Math.sin(c.a),look=14+Math.max(22,c.v*1.15),halfW=m.W/2+6;let lim=speed;
+ const test=(x,y,half)=>{const dx=x-c.x,dy=y-c.y,al=dx*co+dy*si;if(al<=0||Math.abs(-dx*si+dy*co)>halfW)return;
+  const gap=al-m.L/2-half;if(gap>=look)return;const want=Math.max(0,(gap-8)*.95);if(want<lim)lim=want};
+ if(!P.car)test(P.x,P.y,4);for(const o of C)if(o!==c)test(o.x,o.y,MD[o.m].L/2);for(const n of N)if(!n.dead)test(n.x,n.y,4);return lim}
 const busCorners=busRoad.pts.slice(0,-1).map((p,i)=>{const prev=busRoad.pts[(i+busRoad.pts.length-2)%(busRoad.pts.length-1)],next=busRoad.pts[i+1],l=Math.hypot(p[0]-prev[0],p[1]-prev[1]),m=Math.hypot(next[0]-p[0],next[1]-p[1]),tx=(p[0]-prev[0])/l,ty=(p[1]-prev[1])/l,ux=(next[0]-p[0])/m,uy=(next[1]-p[1])/m,ax=p[0]-tx*22-ty*9,ay=p[1]-ty*22+tx*9,bx=p[0]+ux*22-uy*9,by=p[1]+uy*22+ux*9,control=turnControl(ax,ay,bx,by,tx,ty,ux,uy);return{ax,ay,bx,by,cx:control.x,cy:control.y,s:busRoad.cum[i]}});
 function busPose(c,s){for(const t of busCorners){let d=s-t.s;if(d>busRoad.len/2)d-=busRoad.len;if(d< -busRoad.len/2)d+=busRoad.len;if(Math.abs(d)>22)continue;const u=(d+22)/44,v=1-u;c.x=v*v*t.ax+2*v*u*t.cx+u*u*t.bx;c.y=v*v*t.ay+2*v*u*t.cy+u*u*t.by;c.a=Math.atan2(v*(t.cy-t.ay)+u*(t.by-t.cy),v*(t.cx-t.ax)+u*(t.bx-t.cx));return}const q=roadPt(busRoad,s);c.x=q.x-q.ty*9;c.y=q.y+q.tx*9;c.a=Math.atan2(q.ty,q.tx)}
 function runBus(c,dt){if(c.wait>0){c.wait-=dt;return}const next=(c.stopIndex+1)%busStops.length,end=busStops[next]+(next===0?busRoad.len:0),left=end-c.al;
  let reserved=false,approach=null;for(const n of trafficNodes.values()){const dx=n.x-c.x,dy=n.y-c.y,along=dx*Math.cos(c.a)+dy*Math.sin(c.a),side=-dx*Math.sin(c.a)+dy*Math.cos(c.a);if(n.owner===c.id&&(along< -140||Math.hypot(dx,dy)>180))n.owner=0;if(along>0&&along<150&&Math.abs(side)<20){approach=n;if(n.owner&&n.owner!==c.id&&C.some(o=>o.id===n.owner&&o.ai&&!o.chase&&o.edge?.to===n))reserved=true}}
- const blocked=reserved||(!P.car&&ahead(c,P.x,P.y))||C.some(o=>o!==c&&ahead(c,o.x,o.y));if(approach&&!blocked)approach.owner=c.id;c.v=Math.max(0,Math.min(c.v+10*dt,blocked?Math.max(0,c.v-80*dt):32,Math.sqrt(Math.max(.5,30*left))));
- const delta=Math.min(left,c.v*dt),x=c.x,y=c.y,a=c.a;busPose(c,(c.al+delta)%busRoad.len);if(carCol(c,c.x,c.y,c.a)){c.x=x;c.y=y;c.a=a;c.v=0;return}c.al+=delta;
+ const stuck=carCol(c,c.x,c.y,c.a),limit=reserved?0:(stuck?32:followLimit(c,32));if(approach&&limit>0)approach.owner=c.id;
+ c.v=Math.max(0,Math.min(c.v+10*dt,limit,Math.sqrt(Math.max(.5,30*left))));
+ const delta=Math.min(left,c.v*dt),x=c.x,y=c.y,a=c.a;busPose(c,(c.al+delta)%busRoad.len);if(!stuck&&carCol(c,c.x,c.y,c.a)){c.x=x;c.y=y;c.a=a;c.v=Math.max(0,c.v-200*dt);return}c.al+=delta;
  if(left<=delta){c.stopIndex=next;c.al=busStops[next];c.v=0;c.wait=6}if(P.car===c){P.x=c.x;P.y=c.y;P.a=c.a;if(x!==c.x||y!==c.y)playerMoved()}}
-function updateTraffic(dt){for(const c of C){if(c.route){runBus(c,dt);continue}if(c.drv)continue;
+function updateTraffic(dt){for(const c of C){
+ /* После ДТП — 5 секунд стоянки, потом машина возвращается на полосу и едет дальше. */
+ if(c.stun>0){c.stun-=dt;c.v=0;c.lat=0;if(c.stun<=0){c.stun=0;c.edge=null;c.turn=null;c.nextEdge=null}continue}
+ if(c.route){runBus(c,dt);continue}if(c.drv)continue;
  if(c.ai){
   const pdist=P?Math.hypot(P.x-c.x,P.y-c.y):1e9;
   c.chase=!!(c.pol&&want>0&&pdist<300);
@@ -1158,16 +1184,15 @@ function updateTraffic(dt){for(const c of C){if(c.route){runBus(c,dt);continue}i
   roadTraffic(c,dt);
  }else if(Math.hypot(c.v,c.lat)>.05){moveCar(c,dt);c.v*=Math.exp(-1.8*dt);c.lat*=Math.exp(-3*dt)}
  }
- // Взаимная безопасность трафика: ИИ-машины тормозят перед друг другом и не слипаются в ДТП
+ // Взаимная безопасность трафика: только продольное торможение перед впереди идущими.
+ // Боковое расталкивание убрано: из-за него машины уходили с полосы, «змеили» и цепляли друг друга.
  for(const c of C){if(!c.ai||c.drv||c.chase)continue;const mc=MD[c.m],co=Math.cos(c.a),si=Math.sin(c.a);
   for(const o of C){if(o===c)continue;const mo=MD[o.m],dx=o.x-c.x,dy=o.y-c.y,al=dx*co+dy*si,lt=-dx*si+dy*co,half=(mc.W+mo.W)/2+2.5;
-   if(al>0&&Math.abs(lt)<half){
-    const alO=(c.x-o.x)*Math.cos(o.a)+(c.y-o.y)*Math.sin(o.a);
-    if(alO<=1.5||o.id<c.id){const gap=al-(mc.L+mo.L)/2,brake=Math.max(14,c.v*.9+7);if(gap<brake){const lim=Math.max(0,(gap-6)*1.2);if(c.v>lim)c.v=lim}}}
-   if(Math.abs(dx)<mc.L+mo.L&&Math.abs(dy)<mc.L+mo.L&&boxContact(c.x,c.y,mc.L,mc.W,c.a,o.x,o.y,mo.L,mo.W,o.a)){
-    const sep=CONTACT.depth*.5+.5,cnx=CONTACT.nx,cny=CONTACT.ny;c.v*=.4;
-    const cx2=c.x+cnx*sep,cy2=c.y+cny*sep;if(!solid(cx2,cy2)){c.x=cx2;c.y=cy2}
-    if(o.ai&&!o.drv){const ox2=o.x-cnx*sep,oy2=o.y-cny*sep;if(!solid(ox2,oy2)){o.x=ox2;o.y=oy2}}}}
+   if(al<=0||Math.abs(lt)>=half)continue;
+   /* Уже перекрылись (спавн/растащило) — не тормозим: иначе заклинит. Даём спокойно разъехаться. */
+   const gap=al-(mc.L+mo.L)/2;if(gap<0)continue;
+   const brake=Math.max(16,c.v*1.05+10);
+   if(gap<brake){const lim=Math.max(0,(gap-6)*1.2);if(c.v>lim)c.v=lim}}
  }
 }
 function updateBullets(dt){
