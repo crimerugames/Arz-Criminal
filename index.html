@@ -66,13 +66,13 @@ const MS=[
 {n:"Колёса",pay:500,car:[590,650,1,"#2a7a40"],sp:[],steps:[{t:"enter",tx:"Сядь в зелёную девятку (Е)"},{t:"drive",x:1000,y:300,tx:"Пригони её к гаражам"}],
  pre:[["M","Кабан наглеет. Для разговора нужны колёса. Зелёная девятка у центра, ключи в замке, как обычно."],["L","То есть мы её угоняем?"],["M","Мы её одалживаем у города. Гони к гаражам."]],
  post:[["M","Молодец. Кабан сам позвал нас на стрелку у ДК. Иди один, я подъеду позже."],["L","Один?.."]]},
-{n:"Перед стрелкой",pay:700,sp:[],steps:[{t:"enterArea",k:"church",tx:"Зайди в церковь перед стрелкой"},{t:"pray",k:"church",tx:"Поставь свечу и помолись"},{t:"exitArea",tx:"Выйди из церкви"},{t:"drive",x:0,y:0,tx:"Езжай к ДК"},{t:"kill",tx:"Отбейся от людей Кабана"}],
+{n:"Перед стрелкой",pay:700,sp:[],steps:[{t:"enterArea",k:"church",tx:"Зайди в церковь перед стрелкой"},{t:"pray",k:"church",tx:"Поставь свечу и помолись"},{t:"exitArea",tx:"Выйди из церкви"},{t:"drive",x:1781,y:1002,tx:"Езжай к ДК"},{t:"kill",tx:"Отбейся от людей Кабана"}],
  pre:[["N","Впервые в городе назначена стрелка. Михалыч говорит, что разговор короткий."],["M","Перед тем как ехать к ДК, зайди в церковь. Поставь свечу. Не для меня — для себя."],["L","Ты же знаешь, я не верю."],["M","Тогда просто постой в тишине. Дальше решать будешь сам."]],
  post:[["K","Стой, стой! Общак Михалыч унёс, а не я! Он тебя подставил!"],["L","Врёшь!"],["K","Мне-то зачем? Спроси у него в «Ракушке»."]]},
 {n:"Ракушка",pay:900,sp:[[990,780,990,740],[1010,860,1010,900],[995,820,995,850],[1005,790,1005,770],[990,880,990,850],[1010,760,1010,720]],steps:[{t:"go",x:1000,y:780,tx:"Найди Михалыча в баре «Ракушка»"},{t:"kill",tx:"Выживи"}],
  pre:[["L","Михалыч, где общак? Кабан говорит, ты его унёс."],["M","Кабан врёт. Заходи в «Ракушку», там всё объясню."]],
  post:[["L","Это были люди Михалыча. Он меня сдал."],["N","На стойке записка: «Общак в гаражах. Не торопись. М.»"]]},
-{n:"Общак",pay:1500,sp:[],steps:[{t:"drive",x:0,y:0,tx:"Езжай к гаражному кооперативу"},{t:"enterArea",k:"garage",tx:"Войди в кооператив"},{t:"kill",tx:"Отбейся от людей Михалыча"},{t:"interact",k:"garage",id:"stash",tx:"Забери общак с верстака"}],
+{n:"Общак",pay:1500,sp:[],steps:[{t:"drive",x:2653,y:1493,tx:"Езжай к гаражному кооперативу"},{t:"enterArea",k:"garage",tx:"Войди в кооператив"},{t:"kill",tx:"Отбейся от людей Михалыча"},{t:"interact",k:"garage",id:"stash",tx:"Забери общак с верстака"}],
  pre:[["L","В гаражи. Хватит бегать."],["N","На этот раз кооператив встречает тебя светом фар. За воротами ждут не только ответы."]],
  post:[["K","Михалыч мне сводный брат, дурень! Мы вдвоём тебя разводили, а ты всё сделал сам."],["M","Ничего личного, Лёха. Сочи зовёт."],["N","В гараже ржавая «Волга» и записка: «Уехали отдыхать. Бита — тебе»."],["L","Ну, Арзамас. Теперь я сам себе Михалыч."],["N","Через неделю у ДК к Лёхе подошёл незнакомец в кожанке."],["N","Выстрел. Арзамас, 1999 год. Лёху Шестерёнкина похоронили на старом кладбище за счёт города."],["N","Так заканчивались девяностые."]]}];
 try{const raw=localStorage.getItem(KEY);if(raw){const t=JSON.parse(raw);if(t&&typeof t==="object"){S=Object.assign(S,t);had=true}}}catch(e){}
@@ -143,6 +143,8 @@ function carCol(c,nx,ny,na){
  const m=MD[c.m],co=Math.cos(na),sn=Math.sin(na),ex=Math.abs(co)*m.L/2+Math.abs(sn)*m.W/2,ey=Math.abs(sn)*m.L/2+Math.abs(co)*m.W/2;
  CONTACT.body=null;if(nx<ex||ny<ey||nx>WW-ex||ny>WH-ey){CONTACT.nx=nx<ex?1:nx>WW-ex?-1:0;CONTACT.ny=ny<ey?1:ny>WH-ey?-1:0;return true}
  for(const w of queryWalls(nx-ex,ny-ey,nx+ex,ny+ey)){if(w.t==="w")continue;if(boxContact(nx,ny,m.L,m.W,na,w.x+w.w/2,w.y+w.h/2,w.w,w.h,0)){CONTACT.body=w;return true}}
+ /* Остановки — твёрдые: машина упирается в платформу, а не проезжает сквозь неё. */
+ for(const p of busPlatforms)if(Math.abs(nx-p.x)<m.L+13&&Math.abs(ny-p.y)<m.L+13&&boxContact(nx,ny,m.L,m.W,na,p.x,p.y,26,7,p.a)){CONTACT.body=p;return true}
  for(const o of C)if(o!==c&&Math.abs(nx-o.x)<m.L+MD[o.m].L&&Math.abs(ny-o.y)<m.L+MD[o.m].L&&boxContact(nx,ny,m.L,m.W,na,o.x,o.y,MD[o.m].L,MD[o.m].W,o.a)){CONTACT.body=o;return true}return false}
 
 /* ===== МИР ===== */
@@ -170,19 +172,21 @@ const lines=[
  ["Урицкого",17,[[178,218],[205,216],[223,230.5],[264,229]]],
  ["Соборная",17,[[186,265],[220,275],[245,280]]],
  ["Первомайская",17,[[214,187],[205,216],[199,242],[186,265]]],
- ["Кирилловская",24,[[214,339],[265,346],[331,340],[411,330],[496,313],[549,284],[600,277]]]
+ ["Кирилловская",24,[[214,339],[265,346],[331,340],[411,330],[496,313],[549,284],[600,277]]],
+ /* Заречная — мост через реку к частным домам на западном берегу. */
+ ["Заречная",18,[[129,145],[95,140],[66,146],[30,148]]]
 ];
 const RD=lines.map(([name,w,p])=>{const pts=p.map(q=>sheet(...q)),cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));return{name,w:w*CITY_SCALE,pts,cum,len:cum[cum.length-1]}});
 const RIV=[[86,0],[69,33],[53,73],[56,110],[66,148],[88,186],[119,214],[151,236],[167,266],[169,303],[163,336],[174,365],[177,397],[190,427],[215,458],[240,481]].map(q=>sheet(...q));
 /* ЖД-путь существует только у вокзала (западный край): короткая двухпутка вдоль станции. */
 const RAILS=[[[241,2],[255,35],[272,56],[296,72]],[[244,1],[258,33],[275,54],[299,70]]].map(path=>path.map(q=>sheet(...q)));
 const ZN=[["mkt",250,530,410,650,74,"#6a655a"],["old",475,395,720,625,46,"#64604f"],["micro10",610,205,875,470,38,"#4f5c3c"],["micro11",675,730,950,1040,38,"#4c5a3b"],["priv",0,0,420,250,60,"#4e5a3c"],["priv",0,560,330,930,70,"#4e5a3c"],["priv",0,1010,520,1320,70,"#4e5a3c"],["priv",520,1010,780,1320,50,"#4e5a3c"],["priv",780,820,950,1320,35,"#4e5a3c"],["priv",330,820,560,990,35,"#4e5a3c"],["khr",0,255,560,560,40,"#4b5340"],["khr",330,610,520,820,22,"#4b5340"],["khr",560,820,780,990,16,"#4b5340"],["khr",760,260,940,520,16,"#4b5340"],["khr",640,0,940,250,16,"#4b5340"],["stal",520,430,760,640,14,"#55584a"],["ind",640,640,800,840,8,"#5a5750"],["ind",860,520,950,600,3,"#5a5750"],["mkt",250,540,400,630,40,"#6a655a"],["park",430,230,700,440,48,"#3f5a34"],["stn",520,770,690,850,10,"#5a5a56"]];
-const DISTRICTS=[[221,216,"Центр"],[180,116,"Дубки"],[226,20,"408 км"],[430,370,"11-й микрорайон"],[191,416,"Ивановка"],[376,434,"Лесной"],[552,282,"Кирилловка"],[84,328,"Выездное"]].map(([x,y,n])=>({x:x*950/600,y:y*1320/481,n}));
+const DISTRICTS=[[221,216,"Центр"],[180,116,"Дубки"],[226,20,"408 км"],[318,370,"11-й микрорайон"],[191,416,"Ивановка"],[376,434,"Лесной"],[552,282,"Кирилловка"],[84,328,"Выездное"]].map(([x,y,n])=>({x:x*950/600,y:y*1320/481,n}));
 const crews=[
- ["Чирик",170,143,"#798d68","Ремонтные квитанции остались у меня. На площади их ждут до закрытия.",3],
+ ["Чирик",45,145,"#798d68","Ремонтные квитанции остались у меня. На площади их ждут до закрытия.",3],
  ["Мировские",418,178,"#728ba2","В одиннадцатом собирают команду на воскресенье. Передашь заявку?",2],
- ["11-й микрорайон",439,326,"#ad8065","Передай Чирику список семей. На зиму обещали привезти уголь.",0],
- ["Площадь",337,356,"#ad9a69","Мировские считают, что ярмарку отменили. Отнеси им афишу.",1]
+ ["11-й микрорайон",309,352,"#ad8065","Передай Чирику список семей. На зиму обещали привезти уголь.",0],
+ ["Площадь",205,356,"#ad9a69","Мировские считают, что ярмарку отменили. Отнеси им афишу.",1]
 ].map(([name,x,y,color,line,to])=>({name,p:sheet(x,y),color,line,to}));
 function localCrew(id){const crew=crews[id],to=crews[crew.to],job=S.errand;
  if(job!=null&&crews[job]?.to===id){S.errand=null;(S.crewDone||={})[job]=true;S.rub+=85;save();showCut([["N",crew.name+": «Дошло. Передай своим спасибо». За дорогу тебе оставили 85 ₽."]],null)}
@@ -290,6 +294,14 @@ function buildGround(){
  for(const r of RD){x.strokeStyle="#6a6a62";x.lineWidth=r.w+8*CITY_SCALE;pa(r);x.stroke()}
  for(const r of RD){x.strokeStyle="#3b3b40";x.lineWidth=r.w;pa(r);x.stroke()}
  x.setLineDash([8*CITY_SCALE,8*CITY_SCALE]);for(const r of RD){x.strokeStyle="#8a8a50";x.lineWidth=1.2*CITY_SCALE;pa(r);x.stroke()}x.setLineDash([]);
+ /* Мост через реку у Заречной: настил и перила поверх воды. */
+ (function(){const r=RD.find(r=>r.name==="Заречная");if(!r)return;const HW=23*CITY_SCALE;let s0=null,s1=null;
+  for(let s=0;s<=r.len;s+=3){const q=roadPt(r,s,{x:0,y:0,tx:0,ty:0});if(polyDist(RIV,q.x,q.y)<HW+14){if(s0===null)s0=s;s1=s}}
+  if(s0===null)return;const a=roadPt(r,Math.max(0,s0-10),{x:0,y:0,tx:0,ty:0}),b=roadPt(r,Math.min(r.len,s1+10),{x:0,y:0,tx:0,ty:0});
+  const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,nx=-dy/L,ny=dx/L,off=r.w/2+2*CITY_SCALE;
+  x.strokeStyle="#5d5a52";x.lineWidth=r.w+6*CITY_SCALE;x.lineCap="butt";x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();
+  for(const sg of [-1,1]){x.strokeStyle="#a89f8d";x.lineWidth=2.4*CITY_SCALE;x.beginPath();x.moveTo(a.x+nx*off*sg,a.y+ny*off*sg);x.lineTo(b.x+nx*off*sg,b.y+ny*off*sg);x.stroke()}
+  x.fillStyle="#a89f8d";for(let s=Math.max(0,s0-10);s<=Math.min(r.len,s1+10);s+=10*CITY_SCALE){const q=roadPt(r,s,{x:0,y:0,tx:0,ty:0});for(const sg of [-1,1])x.fillRect(q.x+nx*off*sg-1.4*CITY_SCALE,q.y+ny*off*sg-1.4*CITY_SCALE,2.8*CITY_SCALE,2.8*CITY_SCALE)}})();
  for(const path of RAILS){x.beginPath();path.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle="#5c574d";x.lineWidth=22*CITY_SCALE;x.lineCap="butt";x.stroke()}
  for(const path of RAILS){x.beginPath();path.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.strokeStyle="#47423a";x.lineWidth=12*CITY_SCALE;x.stroke()}
  x.strokeStyle="#8b8170";x.lineWidth=2.3*CITY_SCALE;for(const path of RAILS){x.beginPath();path.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.stroke()}
@@ -554,12 +566,12 @@ function roadTraffic(c,dt,chase){
   /* Застрявшую не на полосе машину возвращаем на неё принудительно — иначе она не выедет. */
   if(carCol(c,c.x,c.y,c.a)||!carCol(c,anchor.x,anchor.y,anchor.a)){c.x=anchor.x;c.y=anchor.y;c.a=anchor.a}
   else{const da=Math.atan2(Math.sin(anchor.a-c.a),Math.cos(anchor.a-c.a));c.a+=da*Math.min(1,8*dt)}
-  c.v=Math.min(c.v,16);return}
+  c.v=Math.min(c.v,24);return}
  if(!c.nextEdge){const options=node.out.filter(o=>o.to!==e.from);
   if(!options.length)c.nextEdge=node.out[0];
   else if(chase){let best=options[0],bd=1e9;for(const o of options){const d=Math.hypot(o.to.x-P.x,o.to.y-P.y);if(d<bd){bd=d;best=o}}c.nextEdge=best}
   else c.nextEdge=options[(c.id+(c.trips||0))%options.length]}
- const n=c.nextEdge;if(!n){c.v=0;return}
+ const n=c.nextEdge;if(!n){c.edge=null;c.v=Math.min(c.v,20);return}
  const close=e.len-c.edgeS<(node.out.length>2?140:65);
  /* Владелец перекрёстка сбрасывается, если машина уехала, угнана или сломана — иначе пробка навсегда. */
  let otherOwner=false;
@@ -567,19 +579,19 @@ function roadTraffic(c,dt,chase){
   if(!own||own.drv||!own.ai||own.hp<=0||own.br===2||Math.hypot(own.x-node.x,own.y-node.y)>160)node.owner=0;else otherOwner=true}
  const blocked=close&&otherOwner;
  if(close&&!blocked)node.owner=c.id;
- const bend=e.tx*n.tx+e.ty*n.ty,speed=chase?(close&&bend<.9?22:58):(close&&bend<.9?16:32);
+ const bend=e.tx*n.tx+e.ty*n.ty,speed=chase?(close&&bend<.9?22:58):(close&&bend<.9?20:32);
  /* Если машина уже застряла в коллизии (растащило, спавн), даём ей выехать по полосе, а не блокируем навсегда. */
- const stuck=carCol(c,c.x,c.y,c.a),desired=blocked?0:(stuck?speed:followLimit(c,speed));
+ const stuck=carCol(c,c.x,c.y,c.a),desired=blocked?9:(stuck?speed:followLimit(c,speed));
  c.v=Math.max(0,c.v+Math.max(-85*dt,Math.min(12*dt,desired-c.v)));const ds=c.v*dt;if(!ds)return;
  const q=laneScratch;let s=c.edgeS,t=c.turn;
  if(t){const u=Math.min(1,t.u+ds/t.len),v=1-u;q.x=v*v*t.ax+2*v*u*t.cx+u*u*t.bx;q.y=v*v*t.ay+2*v*u*t.cy+u*u*t.by;q.a=Math.atan2(v*(t.cy-t.ay)+u*(t.by-t.cy),v*(t.cx-t.ax)+u*(t.bx-t.cx));s=u}
  else{s=Math.min(e.len-e.trim,s+ds);lanePoint(e,s,q)}
  /* Коллизия: не телепортируем машину и не обнуляем скорость резко — плавно тормозим
     (через followLimit она остановится заранее), а застрявшую машину пропускаем на выезд. */
- if(!stuck&&carCol(c,q.x,q.y,q.a)){c.v=Math.max(0,c.v-200*dt);return}
+ if(!stuck&&carCol(c,q.x,q.y,q.a)){c.v=Math.max(0,c.v-140*dt);return}
  c.x=q.x;c.y=q.y;c.a=q.a;c.lat=0;
  if(t){t.u=s;if(s>=1){node.owner=0;c.edge=n;c.edgeS=n.trim;c.nextEdge=null;c.turn=null;c.trips=(c.trips||0)+1}}
- else{c.edgeS=s;if(s>=e.len-e.trim){if(otherOwner){c.v=Math.max(0,c.v-200*dt);return}node.owner=c.id;const b=lanePoint(n,n.trim,{}),control=turnControl(q.x,q.y,b.x,b.y,e.tx,e.ty,n.tx,n.ty),cx=control.x,cy=control.y;c.turn={ax:q.x,ay:q.y,bx:b.x,by:b.y,cx,cy,u:0,len:Math.max(1,Math.hypot(q.x-cx,q.y-cy)+Math.hypot(b.x-cx,b.y-cy))}}}}
+ else{c.edgeS=s;if(s>=e.len-e.trim){if(otherOwner){c.v=Math.max(0,c.v-140*dt);return}node.owner=c.id;const b=lanePoint(n,n.trim,{}),control=turnControl(q.x,q.y,b.x,b.y,e.tx,e.ty,n.tx,n.ty),cx=control.x,cy=control.y;c.turn={ax:q.x,ay:q.y,bx:b.x,by:b.y,cx,cy,u:0,len:Math.max(1,Math.hypot(q.x-cx,q.y-cy)+Math.hypot(b.x-cx,b.y-cy))}}}}
 function bindRoad(c){let bd=1e9,bi=0,ba=0;for(let i=0;i<RD.length;i++){const r=RD[i],st=Math.max(8,Math.round(r.len/24));for(let s=0;s<=r.len;s+=st){const q=roadPt(r,s),dx=q.x-c.x,dy=q.y-c.y,d=dx*dx+dy*dy;if(d<bd){bd=d;bi=i;ba=s}}}c.rp=bi;c.al=ba;c.dir=c.dir||1}
 function mkPolice(x,y,rp,al,dir){const c=mkCar(3,x,y,0,"#e9edf2");c.ai=true;c.pol=true;c.rp=rp;c.al=al;c.dir=dir;c.siren=0;c.chase=false;c.jcd=0;return c}
 function genCars(){sd=77;const a=[];for(const n of trafficNodes.values())n.owner=0;
@@ -596,7 +608,7 @@ function genCars(){sd=77;const a=[];for(const n of trafficNodes.values())n.owner
 
 /* ===== ВВОД ===== */
 const keys={},mouse={x:0,y:0,has:false,down:false};
-let touch=false,stick={id:null,ox:0,oy:0,x:0,y:0},fireId=null,gasId=null,brkId=null,revId=null,dashReq=false,meleeReq=false,actReq=false,btns=[],state="menu",back="menu";
+let touch=false,stick={id:null,ox:0,oy:0,x:0,y:0},fireId=null,gasId=null,brkId=null,revId=null,dashId=null,dashReq=false,meleeReq=false,actReq=false,btns=[],state="menu",back="menu";
 // Геймпад: стандартная раскладка (Xbox / PlayStation / Nintendo)
 let arrowAim=false,padFocus=0;
 const pad={on:false,lx:0,ly:0,rx:0,ry:0,fire:false,gas:false,brake:false,rev:false},padPrev={},padHover={x:0,y:0,on:false};
@@ -651,7 +663,7 @@ const settings=document.getElementById("settings"),controlRows=document.getEleme
 function keyName(code){return code.replace("Key","").replace("Left"," лев.").replace("Right"," прав.").replace("Control","Ctrl").replace("Space","Пробел").replace("ArrowUp","↑").replace("ArrowDown","↓")}
 function storeBindings(){try{localStorage.setItem(KEY+"_controls",JSON.stringify(bindings))}catch(_){bindingNote.textContent="Браузер запретил сохранение. Назначения действуют до закрытия."}}
 function renderControls(){controlRows.replaceChildren();for(const k in DEFAULT_KEYS){const row=document.createElement("div"),label=document.createElement("span"),button=document.createElement("button");row.className="control-row";label.textContent=CONTROL_NAMES[k];button.textContent=rebind===k?"Нажми клавишу":keyName(bindings[k]);button.setAttribute("aria-label",CONTROL_NAMES[k]+": "+keyName(bindings[k]));button.onclick=()=>{rebind=k;renderControls();bindingNote.textContent="Новая клавиша для: "+CONTROL_NAMES[k]};row.append(label,button);controlRows.append(row)}}
-function resetInput(){for(const k in keys)keys[k]=false;mouse.down=false;stick.id=fireId=gasId=brkId=revId=null;dashReq=meleeReq=actReq=false}
+function resetInput(){for(const k in keys)keys[k]=false;mouse.down=false;stick.id=fireId=gasId=brkId=revId=dashId=null;dashReq=meleeReq=actReq=false}
 function held(k){return !!keys[bindings[k]]}
 function openSettings(from){back=from;state="settings";resetInput();rebind=null;renderControls();document.getElementById("language").textContent="Язык: "+(S.lang==="en"?"English":"Русский");document.getElementById("music").textContent=mOn?"Музыка: вкл":"Музыка: выкл";document.getElementById("padtype").textContent="Геймпад: "+padLabel();settings.showModal()}
 function closeSettings(){rebind=null;settings.close();state=back;resetInput();cv.focus()}
@@ -671,7 +683,7 @@ cv.addEventListener("pointerdown",e=>{
  if(state==="play"){
   if(p.x>164&&p.y<16){state="pause";resetInput();return}
   if(isM){if(e.button===2)meleeReq=true;else mouse.down=true;return}
-  if(!P.car&&Math.hypot(p.x-150,p.y-222)<12){dashReq=true;return}
+  if(!P.car&&Math.hypot(p.x-150,p.y-222)<12){dashId=e.pointerId;dashReq=true;return}
   if(Math.hypot(p.x-150,p.y-250)<15){actReq=true;return}
   if(Math.hypot(p.x-150,p.y-285)<22){if(P.car)gasId=e.pointerId;else fireId=e.pointerId;return}
   if(P.car&&Math.hypot(p.x-88,p.y-300)<13){revId=e.pointerId;return}
@@ -681,7 +693,7 @@ cv.addEventListener("pointerdown",e=>{
   return}
  for(const b of btns)if(b.fn&&p.x>b.x&&p.x<b.x+b.w&&p.y>b.y&&p.y<b.y+b.h){b.fn();break}});
 cv.addEventListener("pointermove",e=>{const p=lp(e);if(state==="map")mapPointerMove(e.pointerId,p);if(e.pointerType==="mouse"){mouse.x=p.x;mouse.y=p.y;mouse.has=true;arrowAim=false}if(e.pointerId===stick.id){stick.x=p.x;stick.y=p.y}});
-function up(e){mapTouches.delete(e.pointerId);if(e.pointerId===stick.id)stick.id=null;if(e.pointerId===fireId)fireId=null;if(e.pointerId===gasId)gasId=null;if(e.pointerId===brkId)brkId=null;if(e.pointerId===revId)revId=null;if(e.pointerType==="mouse")mouse.down=false}
+function up(e){mapTouches.delete(e.pointerId);if(e.pointerId===stick.id)stick.id=null;if(e.pointerId===fireId)fireId=null;if(e.pointerId===gasId)gasId=null;if(e.pointerId===brkId)brkId=null;if(e.pointerId===revId)revId=null;if(e.pointerId===dashId)dashId=null;if(e.pointerType==="mouse")mouse.down=false}
 cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
 addEventListener("blur",()=>{resetInput();mapTouches.clear();if(state==="play")state="pause"});
 document.addEventListener("visibilitychange",()=>{if(document.hidden){resetInput();if(state==="play")state="pause"}});
@@ -717,12 +729,14 @@ const stx=(i,j)=>(S.lang==="en"?ENM[i].s[j]:MS[i].steps[j].tx).replace(/\([ЕE]\
 const mlines=(i,k)=>(MS[i][k]||[]).map((l,j)=>[l[0],l[1],ENM[i]?.[k]?.[j]||l[1]]);
 const CHN=[["Возвращение","The Return"],["Должок","The Debt"],["Колёса","Wheels"],["Стрелка у ДК","Meeting at the DK"],["Ракушка","Rakushka"],["Дань","Tribute"],["Бумер","The Beamer"],["Гостиница","The Hotel"],["Кооператив","The Cooperative"],["Общак","The Stash"]];
 const chName=i=>{const c=CHN[i]||["Эпилог","Epilogue"];return (S.lang==="en"?"Chapter ":"Глава ")+(i+1)+" — "+(S.lang==="en"?c[1]:c[0])};
-function mcut(i,k){return mlines(i,k).concat((MX[i]&&MX[i][k])||[])}
-function endGame(){state="end"}
-let SHK=0,FX=[],FT=[],BLD=[],ZM=1,PROPS=[];
+/* Если Кабан убит на стрелке, в поздних главах его роль играет Рыжий. */
+function boarDead(){return (S.tags||{}).boar===-1}
+function mcut(i,k){const a=(boarDead()&&ALT[i]&&ALT[i][k])||mlines(i,k);return a.concat((MX[i]&&MX[i][k])||[])}
+function endGame(){state="end";S.mission=MS.length;S.campaignVersion=2;save()}
+let SHK=0,FX=[],FT=[],BLD=[],CORPSES=[],ZM=1,PROPS=[];
 const bulletPool=[],fxPool=[],shellPool=[],marker={x:0,y:0,revision:0};
 function recycle(list,i,pool){pool.push(list[i]);list[i]=list[list.length-1];list.pop()}
-function clearTransient(){while(B.length)bulletPool.push(B.pop());while(FX.length)fxPool.push(FX.pop());while(SH.length)shellPool.push(SH.pop());FT.length=0;BLD.length=0;SHK=0}
+function clearTransient(){while(B.length)bulletPool.push(B.pop());while(FX.length)fxPool.push(FX.pop());while(SH.length)shellPool.push(SH.pop());FT.length=0;BLD.length=0;CORPSES.length=0;SHK=0}
 function playerMoved(){if(!P)return;marker.x=AREA&&CITY?CITY.px:P.x;marker.y=AREA&&CITY?CITY.py:P.y;marker.revision++;if(!AREA){const cell=(P.x/48|0)+4096*(P.y/48|0);if(cell!==P.regionCell){P.regionCell=cell;lastD=distAt(P.x,P.y)}}}
 const safeZone=()=>!!AREA&&!AREA.hostile;
 function velocity(c,vx,vy){const co=Math.cos(c.a),si=Math.sin(c.a);c.v=vx*co+vy*si;c.lat=-vx*si+vy*co}
@@ -754,6 +768,8 @@ function moveCar(c,dt,turn=0){
   const co=Math.cos(c.a),si=Math.sin(c.a),vx=co*c.v-si*c.lat,vy=si*c.v+co*c.lat,nx=c.x+vx*h,ny=c.y+vy*h,na=c.a+turn/steps;
   if(!carCol(c,nx,ny,na)){c.x=nx;c.y=ny;c.a=na;velocity(c,vx,vy)}
   else{const nx2=CONTACT.nx,ny2=CONTACT.ny,o=CONTACT.body;let ovx=0,ovy=0,inv=0;
+   /* Миссия «Бумер»: любое столкновение — провал и рестарт главы. */
+   if(c===P.car&&c===mcar)c.hit=true;
    if(o&&Number.isInteger(o.m)){ovx=Math.cos(o.a)*o.v-Math.sin(o.a)*o.lat;ovy=Math.sin(o.a)*o.v+Math.cos(o.a)*o.lat;inv=1/MD[o.m].mass}
    const vn=(vx-ovx)*nx2+(vy-ovy)*ny2;
    if(vn<0){const j=-(1+.16)*vn/(1/m.mass+inv);velocity(c,vx+j*nx2/m.mass,vy+j*ny2/m.mass);
@@ -931,7 +947,9 @@ function updN(dt){for(const n of N){if(n.dead)continue;if(n.fixed){if(Math.hypot
  else if(stepN(n,-my,mx)||stepN(n,my,-mx))n.sw+=dt*sp/3;
  else{n.dir*=-1;n.a+=1.6;continue}
  if(Math.abs(n.x-ox)+Math.abs(n.y-oy)<.001){n.dir*=-1;if(n.pn>0)n.a+=1.6}}}
-function killN(n){if(safeZone()||n.dead||n.god)return;n.dead=true;const gn=3+(rnd(25)|0);S.rub+=gn;ft(n.x,n.y,"+"+gn+" ₽","#e8c060");SHK=Math.max(SHK,.2);splat(n.x,n.y,16,true);person(BL.getContext("2d"),n.x,n.y,rnd(6.28),n.k,0,true);snd(90,.15,"sawtooth",.06);noise(n.x,n.y,120);raiseWant(1)}
+function killN(n){if(safeZone()||n.dead||n.god)return;n.dead=true;const gn=3+(rnd(25)|0);S.rub+=gn;ft(n.x,n.y,"+"+gn+" ₽","#e8c060");SHK=Math.max(SHK,.2);splat(n.x,n.y,16,true);corpse(n.x,n.y,rnd(6.28),n.k);snd(90,.15,"sawtooth",.06);noise(n.x,n.y,120);raiseWant(1)}
+/* Труп лежит 5 секунд и растворяется — не остаётся на карте навсегда. */
+function corpse(x,y,a,k){if(AREA)return;CORPSES.push({x,y,a,k,t:5,expires:performance.now()+5000})}
 let mOn=S.music!==false,mI=null,mS=0,au=null;
 const TRACKS={rock:"",pop:"",chanson:""}; // сюда можно вставить ссылки на mp3 без авторских прав
 function styleNow(){if(AREA)return AREA.k==="shop"?"pop":"chanson";return["Пландина","АПЗ","Девятого Мая"].includes(lastD)?"rock":["Центр","Соборная площадь","Автостанция"].includes(lastD)?"pop":"chanson"}
@@ -1047,13 +1065,20 @@ function initWorld(fresh){if(AREA)leave();C=[];C=genCars();if(fresh)BL.getContex
  for(const k in ARS){ARS[k].seen=false;for(const n of ARS[k].n){n.dead=false;n.pn=0}ARS[k].bl.getContext("2d").clearRect(0,0,ARS[k].w,ARS[k].h)}
  const fp=frRoad(TG.start[0]+20,TG.start[1]+8),fedor=npc(fp[0],fp[1],"#605247");fedor.questwho="yard";fedor.god=true;fedor.fixed=true;fedor.calm=true;fedor.homeX=fp[0];fedor.homeY=fp[1];fedor.wt=0;fedor.wx=fp[0];fedor.wy=fp[1];fedor.idle=0;fedor.say=["Давно тебя не видел, Лёха.","Haven't seen you in a long time, Lyokha."];N.push(fedor);
  populateCrews();hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;playerMoved()}
-function startGame(fresh){initWorld(fresh);cam.sn=true;const i=S.mission;if(i>=MS.length){startMission(i);state="play"}else showCut(mcut(i,"pre"),()=>startMission(i))}
+function startGame(fresh){initWorld(fresh);cam.sn=true;const i=S.mission;
+ if(i>=MS.length){S.mission=MS.length;startMission(i);state="play";return}
+ /* Пролог главы уже показали в концовке предыдущей — второй раз не повторяем. */
+ if(S.preShown===i){startMission(i);return}
+ S.preShown=i;save();showCut(mcut(i,"pre"),()=>startMission(i))}
 function startMission(i){mi=i;si=0;E=[];
  /* Машину, в которой сидит игрок, оставляем на карте: иначе он остаётся в невидимом авто. */
  if(P&&P.car){P.car.mc=false;if(!C.includes(P.car))C.push(P.car)}
  C=C.filter(c=>!c.mc);mcar=null;const m=MS[i];state="play";
  for(const n of N)if(n.questwho==="yard")n.dead=i!==0;
- if(!m){msg="Открытый мир: катайся по Арзамасу";msgT=5;return}for(const s of m.steps)delete s.done;
+ if(!m){msg="Открытый мир: катайся по Арзамасу";msgT=5;return}
+ /* Сюжет пройден — врагов нет, свободный мир. */
+ if(mi>=MS.length){E=[];return}
+ for(const s of m.steps)delete s.done;
  E=m.sp.map((e,j)=>({x:e[0],y:e[1],ax:e[0],ay:e[1],bx:e[2],by:e[3],a:0,hp:i>=2?2:1,tg:true,st:0,cd:1+rnd(1),sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0}));
  if(m.car){mcar=mkCar(m.car[2],m.car[0],m.car[1],Math.PI/2,m.car[3]);mcar.mc=true;placeCar(mcar,240);C.push(mcar)}
  msg=(S.lang==="en"?"Ch.":"Гл.")+(i+1)+" "+YR[i]+" · "+mname(i);msgT=4}
@@ -1083,10 +1108,14 @@ function checkMission(){const m=MS[mi];if(!m||!m.steps[si])return;const s=m.step
  else if(s.t==="exitArea")ok=!AREA;
  else if(s.t==="talk"||s.t==="interact"||s.t==="pray")ok=!!s.done;
  if(!ok)return;si++;snd(600,.15,"triangle",.06);
- if(si>=m.steps.length){S.rub+=m.pay;S.mission=mi+1;save();const nx=mi+1;let l=mcut(mi,"post");
-  if(CHOICES[mi])l=l.concat([CHOICES[mi]]);
-  l=l.concat([["N","Заработано: "+m.pay+" ₽","Earned: "+m.pay+" RUB"]]).concat(MS[nx]?mcut(nx,"pre"):[]);
-  showCut(l,()=>nx>=MS.length?endGame():startMission(nx))}
+ if(si>=m.steps.length){S.rub+=m.pay;S.mission=mi+1;save();const nx=mi+1;
+  /* Сначала выбор, потом его последствия и итог главы — так реплики не дублируют друг друга. */
+  let l=[];if(CHOICES[mi])l.push(boarDead()&&mi===7?BOAR_CHOICE:CHOICES[mi]);
+  l=l.concat(mcut(mi,"post")).concat([["N","Заработано: "+m.pay+" ₽","Earned: "+m.pay+" RUB"]]);
+  showCut(l,()=>{
+   if(nx>=MS.length){endGame();return}
+   S.preShown=nx;save();const pre=mcut(nx,"pre");
+   if(pre.length)showCut(pre,()=>startMission(nx));else startMission(nx)})}
  else{msg=stx(mi,si);msgT=3}}
 function doMissionInteraction(){
  const m=MS[mi],s=m&&m.steps[si];if(!s)return false;
@@ -1100,7 +1129,7 @@ function doMissionInteraction(){
   if(Math.hypot(o.x-P.x,o.y-P.y)>24)return false;
   const lines=s.t==="pray"?[["N","Ты поставил свечу за мать. В храме тихо, и на несколько секунд город остаётся за стенами."],["L","Не знаю, слышит ли кто-нибудь. Но стало легче."]]:
    s.id==="photo"?[["L","Мама у калитки. Я всё собирался вернуться раньше."],["N","На обороте фотографии выцветшая дата: 1988."]]:
-   s.id==="ledger"?[["N","В журнале — номера боксов, фамилии и суммы. Несколько страниц вырваны."],["L","Вот откуда Кабан знал про общак."]]:
+   s.id==="ledger"?[["N","В журнале — номера боксов, фамилии и суммы. Несколько страниц вырваны."],["L","Вот откуда "+(boarDead()?"Рыжий":"Кабан")+" знал про общак."]]:
    [["N","Под брезентом лежит общак и записка Михалыча."],["L","Хватит. Дальше решать мне."]];
   o.used=true;showCut(lines,()=>{s.done=true;if(s.t==="pray")(S.tags||={}).prayer=true;if(s.id==="stash"){S.tags=S.tags||{};S.tags.final=1}save();checkMission()});return true}
  return false}
@@ -1129,7 +1158,7 @@ function arrestCut(){if(state!=="play")return;
    ["Отказываешься. Дверь КПЗ захлопывается.","You refuse. The cell door clangs shut."]]);
  showCut([line],()=>{(S.tags.arrest===0&&S.rub>=pay)?arrestRelease(pay):arrestJail(150)})}
 function bullet(x,y,a,sp,own,lf){if(safeZone()||B.length>=128)return;const b=bulletPool.pop()||{};b.x=x;b.y=y;b.vx=Math.cos(a)*sp;b.vy=Math.sin(a)*sp;b.own=own;b.l=lf||1.2;b.bounces=0;b.travel=0;B.push(b)}
-function killE(e){if(safeZone()||e.dead)return;e.dead=true;kills++;splat(e.x,e.y,22,true);person(BL.getContext("2d"),e.x,e.y,rnd(6.28),EK,0,true);const gn=20+(rnd(30)|0);S.rub+=gn;ft(e.x,e.y,"+"+gn+" ₽","#e8c060");snd(90,.15,"sawtooth",.06);raiseWant(1)}
+function killE(e){if(safeZone()||e.dead)return;e.dead=true;kills++;splat(e.x,e.y,22,true);corpse(e.x,e.y,rnd(6.28),EK);const gn=20+(rnd(30)|0);S.rub+=gn;ft(e.x,e.y,"+"+gn+" ₽","#e8c060");snd(90,.15,"sawtooth",.06);raiseWant(1)}
 function sees(e){const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy);if(d>115)return false;let da=Math.atan2(dy,dx)-e.a;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)>.95&&d>22)return false;return los(e.x,e.y,P.x,P.y)}
 function shoot(){
  if(safeZone()||P.down>0||P.cd>0||P.car)return;
@@ -1148,7 +1177,7 @@ function act(){if(P.down>0)return;if(doMissionInteraction())return;if(doAreaInte
   if(!ok){msg="Двери заблокированы";msgT=2;return}c.pax=false;c.drv=false;c.v=c.lat=0;P.car=null;P.vx=P.vy=0;P.impact=.8;playerMoved();return}
  const c=nearCar();if(c){if(c.pol){c.pol=false;c.ai=false;c.chase=false;c.siren=0;raiseWant(2);msg="Угон милицейской машины! Розыск: заплати или поедешь в КПЗ";msgT=3.5}if(c.m===4){if(!c.route||c.wait<=0){msg="Посадка только на остановке";msgT=2;return}if(S.rub>=5){S.rub-=5;c.pax=true;P.car=c;msg="Проезд 5 ₽";msgT=2}else{msg="Нет 5 ₽ на проезд";msgT=2;return}}else{c.drv=true;c.ai=false;c.v=c.lat=0;P.car=c;snd(180,.08,"square",.04)}P.x=c.x;P.y=c.y;P.vx=P.vy=0;playerMoved()}}
 function hitP(damage=34,impact=false){if(safeZone()||!P||(!impact&&P.inv>0)||P.hp<=0)return;P.hp=Math.max(0,P.hp-damage*(modes[S.level]||modes[1])[1]);P.inv=.4;SHK=.6;fx(P.x,P.y,"#a01010",8);hurt=.25;splat(P.x,P.y,10,false);snd(80,.2,"sawtooth",.08);
- if(P.hp<=0){if(P.car){P.car.drv=false;P.car.v=0;P.car=null}state="dead";deadT=0;splat(P.x,P.y,30,true);person(BL.getContext("2d"),P.x,P.y,P.a,SK[S.skin],0,true)}}
+ if(P.hp<=0){if(P.car){P.car.drv=false;P.car.v=0;P.car=null}state="dead";deadT=0;splat(P.x,P.y,30,true);corpse(P.x,P.y,P.a,SK[S.skin])}}
 function respawn(){if(AREA)leave();cam.sn=true;const fee=Math.min(100,S.rub);S.rub-=fee;save();C=C.filter(c=>!c.drv);P=newPlayer();clearTransient();resetInput();const p=fr(P.x,P.y);P.x=p[0];P.y=p[1];playerMoved();hurt=0;
  const i=mi;startMission(i);if(fee>0){msg="Больничка: −"+fee+" ₽";msgT=3}}
 const inputVector=[0,0,0];
@@ -1161,15 +1190,17 @@ function inputs(){let mx=0,my=0;
 function followLimit(c,speed){const m=MD[c.m],co=Math.cos(c.a),si=Math.sin(c.a),look=14+Math.max(22,c.v*1.15),halfW=m.W/2+6;let lim=speed;
  const test=(x,y,half)=>{const dx=x-c.x,dy=y-c.y,al=dx*co+dy*si;if(al<=0||Math.abs(-dx*si+dy*co)>halfW)return;
   const gap=al-m.L/2-half;if(gap>=look)return;const want=Math.max(0,(gap-8)*.95);if(want<lim)lim=want};
- if(!P.car)test(P.x,P.y,4);for(const o of C)if(o!==c)test(o.x,o.y,MD[o.m].L/2);for(const n of N)if(!n.dead)test(n.x,n.y,4);return lim}
+ if(!P.car)test(P.x,P.y,4);for(const o of C)if(o!==c)test(o.x,o.y,MD[o.m].L/2);
+ /* Пешеход на тротуаре не должен «стопорить» полосу — тормозим только перед теми, кто на проезжей части. */
+ for(const n of N)if(!n.dead&&roadDist(n.x,n.y)<2)test(n.x,n.y,4);return lim}
 const busCorners=busRoad.pts.slice(0,-1).map((p,i)=>{const prev=busRoad.pts[(i+busRoad.pts.length-2)%(busRoad.pts.length-1)],next=busRoad.pts[i+1],l=Math.hypot(p[0]-prev[0],p[1]-prev[1]),m=Math.hypot(next[0]-p[0],next[1]-p[1]),tx=(p[0]-prev[0])/l,ty=(p[1]-prev[1])/l,ux=(next[0]-p[0])/m,uy=(next[1]-p[1])/m,ax=p[0]-tx*22-ty*9,ay=p[1]-ty*22+tx*9,bx=p[0]+ux*22-uy*9,by=p[1]+uy*22+ux*9,control=turnControl(ax,ay,bx,by,tx,ty,ux,uy);return{ax,ay,bx,by,cx:control.x,cy:control.y,s:busRoad.cum[i]}});
 function busPose(c,s){for(const t of busCorners){let d=s-t.s;if(d>busRoad.len/2)d-=busRoad.len;if(d< -busRoad.len/2)d+=busRoad.len;if(Math.abs(d)>22)continue;const u=(d+22)/44,v=1-u;c.x=v*v*t.ax+2*v*u*t.cx+u*u*t.bx;c.y=v*v*t.ay+2*v*u*t.cy+u*u*t.by;c.a=Math.atan2(v*(t.cy-t.ay)+u*(t.by-t.cy),v*(t.cx-t.ax)+u*(t.bx-t.cx));return}const q=roadPt(busRoad,s);c.x=q.x-q.ty*9;c.y=q.y+q.tx*9;c.a=Math.atan2(q.ty,q.tx)}
 function runBus(c,dt){if(c.wait>0){c.wait-=dt;return}const next=(c.stopIndex+1)%busStops.length,end=busStops[next]+(next===0?busRoad.len:0),left=end-c.al;
  let reserved=false,approach=null;for(const n of trafficNodes.values()){const dx=n.x-c.x,dy=n.y-c.y,along=dx*Math.cos(c.a)+dy*Math.sin(c.a),side=-dx*Math.sin(c.a)+dy*Math.cos(c.a);if(n.owner===c.id&&(along< -140||Math.hypot(dx,dy)>180))n.owner=0;if(along>0&&along<150&&Math.abs(side)<20){approach=n;if(n.owner&&n.owner!==c.id&&C.some(o=>o.id===n.owner&&o.ai&&!o.chase&&o.edge?.to===n))reserved=true}}
- const stuck=carCol(c,c.x,c.y,c.a),limit=reserved?0:(stuck?32:followLimit(c,32));if(approach&&limit>0)approach.owner=c.id;
+ const stuck=carCol(c,c.x,c.y,c.a),limit=reserved?8:(stuck?32:followLimit(c,32));if(approach&&limit>4)approach.owner=c.id;
  c.v=Math.max(0,Math.min(c.v+10*dt,limit,Math.sqrt(Math.max(.5,30*left))));
- const delta=Math.min(left,c.v*dt),x=c.x,y=c.y,a=c.a;busPose(c,(c.al+delta)%busRoad.len);if(!stuck&&carCol(c,c.x,c.y,c.a)){c.x=x;c.y=y;c.a=a;c.v=Math.max(0,c.v-200*dt);return}c.al+=delta;
- if(left<=delta){c.stopIndex=next;c.al=busStops[next];c.v=0;c.wait=6}if(P.car===c){P.x=c.x;P.y=c.y;P.a=c.a;if(x!==c.x||y!==c.y)playerMoved()}}
+ const delta=Math.min(left,c.v*dt),x=c.x,y=c.y,a=c.a;busPose(c,(c.al+delta)%busRoad.len);if(!stuck&&carCol(c,c.x,c.y,c.a)){c.x=x;c.y=y;c.a=a;c.v=Math.max(0,c.v-140*dt);return}c.al+=delta;
+ if(left<=delta){c.stopIndex=next;c.al=busStops[next];c.v=0;c.wait=3}if(P.car===c){P.x=c.x;P.y=c.y;P.a=c.a;if(x!==c.x||y!==c.y)playerMoved()}}
 function updateTraffic(dt){for(const c of C){
  /* После ДТП — 5 секунд стоянки, потом машина возвращается на полосу и едет дальше. */
  if(c.stun>0){c.stun-=dt;c.v=0;c.lat=0;if(c.stun<=0){c.stun=0;c.edge=null;c.turn=null;c.nextEdge=null}continue}
@@ -1191,8 +1222,8 @@ function updateTraffic(dt){for(const c of C){
    if(al<=0||Math.abs(lt)>=half)continue;
    /* Уже перекрылись (спавн/растащило) — не тормозим: иначе заклинит. Даём спокойно разъехаться. */
    const gap=al-(mc.L+mo.L)/2;if(gap<0)continue;
-   const brake=Math.max(16,c.v*1.05+10);
-   if(gap<brake){const lim=Math.max(0,(gap-6)*1.2);if(c.v>lim)c.v=lim}}
+   const brake=Math.max(10,c.v*1.05+10);
+   if(gap<brake){const lim=Math.max(2,(gap-4)*1.1);if(c.v>lim)c.v=lim}}
  }
 }
 function updateBullets(dt){
@@ -1232,14 +1263,14 @@ function update(dt){
  if(P.car&&P.car.pax){}else if(P.car){const c=P.car,m=MD[c.m],rev=revId!==null||held("reverse")||pad.rev,gasIn=gasId!==null||held("up")||pad.gas,thr=gasIn?1:(rev?-1:-my);c.st+=(mx-c.st)*Math.min(1,dt*5);const str=c.st,handbrake=brkId!==null||held("brake")||pad.brake;
   if(thr>.1)carFault(c,dt);
   const gp=m.g*(handbrake&&Math.abs(c.v)>25?.3:1)*(c.kit&1?1.2:1),power=(.35+.65*c.hp/100)*(c.kit&2?1.12:1);
-  if(thr>.1&&c.hp>0&&c.br!==2)c.v+=m.pull*power*(1-Math.max(0,c.v)/m.v)*(c.br===1?.34*(.6+.4*Math.sin(tm*6.5)):1)*thr*dt;else if(thr<-.1&&(c.v>0||c.hp>0&&c.br!==2))c.v-=(c.v>0?100:m.pull*.65*power)*dt*-thr;else c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),12*dt);
+  if(thr>.1&&c.hp>0&&c.br!==2)c.v+=m.pull*power*(1-Math.max(0,c.v)/m.v)*(c.br===1?.34*(.6+.4*Math.sin(tm*6.5)):1)*thr*dt;else if(thr<-.1&&(c.v>0||c.hp>0&&c.br!==2))c.v-=(c.v>0?100:m.pull*.7475*power)*dt*-thr;else c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),12*dt);
   if(c.br===2)c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),45*dt);
   if(handbrake)c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),60*dt);
-  c.v=Math.max(-22/KMH,Math.min(m.v*(c.br===1?.45:1),c.v));
+  c.v=Math.max(-25.3/KMH,Math.min(m.v*(c.br===1?.45:1),c.v));
   const dr=str*Math.sign(c.v)*Math.min(1,Math.abs(c.v)/30)*(m.cl===2?.8:1.15)*dt;c.lat*=Math.exp(-gp*dt);moveCar(c,dt,dr);if(waterAt(c.x,c.y)){c.v*=.8;c.lat*=.8;if(c.br!==2){c.br=2;msg="Машина заглохла в воде";msgT=3}}}
  else if(P.down>0){P.down-=dt;mv(P,P.vx*dt,P.vy*dt,true);P.vx*=Math.exp(-5*dt);P.vy*=Math.exp(-5*dt);dashReq=meleeReq=false;if(P.down<=0)for(const c of C)if(inCar(c,P.x,P.y,4))eject(c,P)}
  else{const sneak=held("sneak"),spr=!sneak&&held("sprint")&&P.sta>5&&l>.1;P.sta=Math.max(0,Math.min(100,P.sta+(spr?-22:16)*dt));
-  if(dashReq&&P.dash<=0&&P.dcd<=0&&P.sta>=30){P.dash=.2;P.dashSta=30;P.dcd=1;const da=l>.1?Math.atan2(my,mx):P.a;P.dx=Math.cos(da);P.dy=Math.sin(da);snd(260,.08,"triangle",.05)}dashReq=false;
+  if((dashReq||dashId!==null)&&P.dash<=0&&P.dcd<=0&&P.sta>=30){P.dash=.2;P.dashSta=30;P.dcd=1;const da=l>.1?Math.atan2(my,mx):P.a;P.dx=Math.cos(da);P.dy=Math.sin(da);snd(260,.08,"triangle",.05)}dashReq=false;
   const tv=sneak?18:spr?62:40,k=1-Math.exp(-(l>.05?6.5:9)*dt);P.vx+=(mx*tv-P.vx)*k;P.vy+=(my*tv-P.vy)*k;
   if(waterAt(P.x,P.y)){P.vx*=.45;P.vy*=.45}
   if(P.dash>0){P.dash-=dt;if(P.dashSta>0){const q=Math.min(P.dashSta,150*dt);P.dashSta-=q;P.sta=Math.max(0,P.sta-q)}mv(P,P.dx*105*dt,P.dy*105*dt)}else mv(P,P.vx*dt,P.vy*dt);
@@ -1252,6 +1283,11 @@ function update(dt){
   if(meleeReq)melee();
   for(const p of PK)if(!p.t&&Math.hypot(p.x-P.x,p.y-P.y)<8){p.t=true;P.am[0]+=10;P.am[1]+=4;P.am[2]+=15;snd(500,.1,"square",.05);msg="+10 патронов";msgT=1.5}}
  meleeReq=false;
+ /* Провал «Бумера»: одно столкновение — и глава начинается заново. */
+ if(mcar&&mcar.hit&&mi===6){mcar.hit=false;
+  if(P.car===mcar){P.car=null;P.vx=0;P.vy=0;P.down=0}
+  startMission(mi);if(mcar){const q=fr(mcar.x-30,mcar.y);P.x=q[0];P.y=q[1];P.a=0;cam.sn=true}
+  msg="Врезался — «бумер» помят. Миссия заново.";msgT=4;return}
  for(let i=FX.length-1;i>=0;i--){const f=FX[i];f.x+=f.vx*dt;f.y+=f.vy*dt;if((f.t-=dt)<=0)recycle(FX,i,fxPool)}for(let i=FT.length-1;i>=0;i--){FT[i].y-=18*dt;if((FT[i].t-=dt)<=0)FT.splice(i,1)}SHK=Math.max(0,SHK-dt*2);
  updN(dt);updateProps(dt);updateTraffic(dt);if(state!=="play")return;
  // Полиция: затухание розыска, рейды и задержание
@@ -1266,7 +1302,8 @@ function update(dt){
   const ox=e.x,oy=e.y;let tx,ty,sp;
   if(e.st===0){tx=e.tg?e.bx:e.ax;ty=e.tg?e.by:e.ay;sp=30;if(Math.hypot(tx-e.x,ty-e.y)<3)e.tg=!e.tg;e.a=Math.atan2(ty-e.y,tx-e.x)}
   else if(v){const d=Math.hypot(P.x-e.x,P.y-e.y);e.a=Math.atan2(P.y-e.y,P.x-e.x);tx=P.x;ty=P.y;sp=d>55?52:0;
-   if(e.cd<=0&&d<125&&los(e.x,e.y,P.x,P.y)){e.cd=1.1+rnd(.6);bullet(e.x,e.y,e.a+(rnd(.24)-.12),125,"e");snd(110,.1,"sawtooth",.05);noise(e.x,e.y,100)}}
+   /* Случайная перестрелка: 30% шанс передвигаясь пешком, 0% на авто. */
+   if(e.cd<=0&&d<125&&los(e.x,e.y,P.x,P.y)&&(!P.car||rnd(1)<.3)){e.cd=1.1+rnd(.6);bullet(e.x,e.y,e.a+(rnd(.24)-.12),125,"e");snd(110,.1,"sawtooth",.05);noise(e.x,e.y,100)}}
   else{tx=e.lx;ty=e.ly;sp=50;if(Math.hypot(tx-e.x,ty-e.y)<5){sp=0;e.a+=dt*2}else e.a=Math.atan2(ty-e.y,tx-e.x)}
   const dd=Math.hypot(tx-e.x,ty-e.y);
   if(sp>0&&dd>1){mv(e,(tx-e.x)/dd*sp*dt,(ty-e.y)/dd*sp*dt);e.sw+=dt*10}
@@ -1360,6 +1397,8 @@ function drawWorld(){
  /* Интерполяция между шагами физики — движение без рывков на экранах 120 Гц. */
  const iX=o=>o.px==null?o.x:o.px+(o.x-o.px)*RA,iY=o=>o.py==null?o.y:o.py+(o.y-o.py)*RA,iA=o=>{if(o.pa==null)return o.a;const d=Math.atan2(Math.sin(o.a-o.pa),Math.cos(o.a-o.pa));return o.pa+d*RA};
  for(const d of BLD){g.globalAlpha=d.t<1.5?d.t/1.5:1;if(d.big){g.fillStyle=d.ec;g.beginPath();g.ellipse(d.x,d.y,d.ex,d.ey,d.er,0,6.2832);g.fill()}for(const b of d.blobs){g.fillStyle=b.c;g.fillRect(d.x+b.dx,d.y+b.dy,b.s,b.s)}}g.globalAlpha=1;
+ /* Трупы лежат 5 секунд и растворяются. */
+ for(const d of CORPSES){g.globalAlpha=d.t<1.5?Math.max(0,d.t/1.5):1;person(g,d.x,d.y,d.a,d.k,0,true)}g.globalAlpha=1;
  if(!AREA){const nt0=nightAmt();
   for(const p of busPlatforms){g.save();g.translate(p.x,p.y);g.rotate(p.a);
    g.fillStyle="#a49c86";g.fillRect(-13,-3,26,6);g.fillStyle="#7f7764";g.fillRect(-13,1,26,1);
@@ -1467,13 +1506,13 @@ function frRoad(x,y){for(let r=0;r<=120;r+=6)for(let k=0;k<16;k++){const px=x+Ma
 function setupMissions(){
  SP.R={n:"Рыжий",h:"#b04020",c:"#2a2a40"};EN["Рыжий"]="Redhead";
  const NM=[
- {n:"Дань",pay:800,sp:[],steps:[{t:"go",x:0,y:0,tx:"Езжай на автостанцию"},{t:"kill",tx:"Разберись с конкурентами Рыжего"}],
+ {n:"Дань",pay:800,sp:[],steps:[{t:"go",x:2274,y:1647,tx:"Езжай на автостанцию"},{t:"kill",tx:"Разберись с конкурентами Рыжего"}],
   pre:[["N","1995 год. После «Ракушки» Лёха лёг на дно и устроился к Рыжему — собирать дань с перевозчиков."],["R","Автостанция — моя. Конкурентов там быть не должно, ясно?"],["L","Ясно. Мне нужны тишина и деньги. В любом порядке."]],
   post:[["G","Лёха, Рыжий и Кабан давно под одной крышей. Ты опять не у тех работаешь."],["L","В Арзамасе других не бывает."]]},
- {n:"Бумер",pay:1100,car:[0,0,5,"#101018"],sp:[],steps:[{t:"enter",tx:"Сядь в чёрный «бумер» (E)"},{t:"drive",x:0,y:0,tx:"Отгони его на Колхозный рынок"},{t:"kill",tx:"Встреть покупателей"}],
+ {n:"Бумер",pay:1100,car:[1116,930,5,"#101018"],sp:[],steps:[{t:"enter",tx:"Сядь в чёрный «бумер» (E)"},{t:"drive",x:1251,y:1238,tx:"Отгони его на Колхозный рынок"},{t:"kill",tx:"Встреть покупателей"}],
   pre:[["R","Бумер стоит у центра. Гони на рынок, там ждут люди. Не царапай — машина дороже тебя."],["L","Понял. Дороже."]],
   post:[["R","Хороший водитель. Только забудь, что там видел."],["N","В багажнике лежало не то, что обещали. Лёха сделал вид, что не открывал."]]},
- {n:"Гостиница",pay:1400,sp:[],steps:[{t:"go",x:0,y:0,tx:"Езжай к гостинице «Арзамас»"},{t:"kill",tx:"Выживи"}],
+ {n:"Гостиница",pay:1400,sp:[],steps:[{t:"go",x:2425,y:1227,tx:"Езжай к гостинице «Арзамас»"},{t:"kill",tx:"Выживи"}],
   pre:[["N","1997 год. Кабан вернулся в город и снял люкс в гостинице «Арзамас»."],["R","Кабан сам вышел на связь. Хочет поговорить. Возьми ствол."]],
   post:[["K","Не стреляй! Михалыч жив. Он в Сочи, а общак в гаражах. Без меня туда не пройти."],["L","Договорились. Один раз."]]}];
  const NE=[
@@ -1484,7 +1523,7 @@ function setupMissions(){
  const INTRO={n:"Возвращение",pay:150,sp:[],steps:[{t:"talk",who:"yard",tx:"Поговори со старым Фёдором"},{t:"enterArea",k:"home",tx:"Зайди в квартиру на окраине"},{t:"interact",k:"home",id:"photo",tx:"Осмотри семейную фотографию"},{t:"exitArea",tx:"Выйди из квартиры"}],
   pre:[["N","Западная окраина Арзамаса. Осень 1991 года. Последний автобус ушёл."],["L","Сначала найду Фёдора. Он должен меня помнить."]],
   post:[["N","Фёдор вспомнил твою семью и показал короткую дорогу к центру."],["L","Хватит вспоминать. Пора искать работу."]]};
- const GARAGE={n:"Кооператив",pay:900,sp:[],steps:[{t:"drive",x:0,y:0,tx:"Доедь до гаражного кооператива"},{t:"enterArea",k:"garage",tx:"Войди в отдельный гаражный кооператив"},{t:"interact",k:"garage",id:"ledger",tx:"Осмотри журнал на верстаке"},{t:"exitArea",tx:"Выйди из кооператива"}],
+ const GARAGE={n:"Кооператив",pay:900,sp:[],steps:[{t:"drive",x:2653,y:1493,tx:"Доедь до гаражного кооператива"},{t:"enterArea",k:"garage",tx:"Войди в отдельный гаражный кооператив"},{t:"interact",k:"garage",id:"ledger",tx:"Осмотри журнал на верстаке"},{t:"exitArea",tx:"Выйди из кооператива"}],
   pre:[["N","1998 год. Кабан назвал гаражи случайно — слишком быстро, чтобы это было случайностью."],["M","Доедешь до кооператива, найдёшь старшего и спросишь про журнал бокса."],["L","А если начнут задавать вопросы?"],["M","Скажи, что от меня. Здесь все знают, что это плохая примета."]]};
  const INTRO_EN={n:"The Return",s:["Talk to old Fyodor","Enter your home","Look at the family photograph","Leave the apartment"],pre:["Western edge of Arzamas. Autumn, 1991. The last bus has left.","First, find Fyodor. He should remember me."],post:["Fyodor remembers your family and points out the short road to town.","Enough looking back. Time to find work."]};
  const GARAGE_EN={n:"The Cooperative",s:["Drive to the garage cooperative","Enter the separate garage map","Check the ledger on the workbench","Leave the cooperative"],pre:["1998. Boar mentioned the garages by accident — too quickly for it to be an accident.","Drive to the cooperative, find the manager and ask about the unit ledger.","And if they start asking questions?","Say Mikhalych sent you. Everyone here knows that's a bad sign."]};
@@ -1515,7 +1554,7 @@ const MX={
  9:{pre:[["N","Гаражи. Ржавчина, масло и тишина перед выстрелом.","The garages. Rust, oil and the silence before a shot."]]}};
 /* Развилки 50/50: выбор 1 — светлый (+1 к карме), выбор 2 — тёмный (−1) */
 const CHOICES={
- 1:CH("Гера трясётся: «Лёх, отдам, только не сейчас…»","Gera trembles: «Lyokh, I'll pay, just not now…»",
+ 1:CH("Гера вытирает руки о фартук: «Лёх, у меня семья. Дай срок до пятницы»","Gera wipes his hands on his apron: «Lyokh, I have a family. Give me till Friday»",
       "Простить долг","Forgive the debt","Забрать всё до копейки","Take it all to the kopeck",1,-1,"gera",
       [["Лёха махнул рукой: «Живи». Гера выдохнул.","Lyokha waved: «Live.» Gera exhaled."],
        ["Лёха вытряс ларёк до копейки. Гера смотрел в пол.","Lyokha shook the stall down to the last kopeck. Gera stared at the floor."]]),
@@ -1527,7 +1566,7 @@ const CHOICES={
       "Взять как есть","Take what's there","Вытрясти вдвойне","Shake them double",1,-1,"tribute",
       [["Лёха взял половину и кивнул: «Живите».","Lyokha took half and nodded: «Live.»"],
        ["Лёха забрал всё. Кто-то остался без обеда, кто-то — без рейса.","Lyokha took it all. Someone lost lunch, someone lost a route."]]),
- 7:CH("Кабан шепчет: «Михалыч жив. Пойдём вместе — поделим общак».","Boar whispers: «Mikhalych is alive. Let's go together — split the stash.»",
+ 7:CH("Кабан шепчет: «Отпусти — и я скажу, где общак на самом деле».","Boar whispers: «Let me go and I'll tell you where the stash really is».",
       "Не верить ему","Don't trust him","Согласиться","Agree with him",1,-1,"boar2",
       [["Лёха держал ствол под столом. Незнакомцам не верят.","Lyokha kept the gun under the table. Strangers aren't trusted."],
        ["Лёха кивнул. Он уже знал, что предаст Кабана первым.","Lyokha nodded. He already knew he would betray Boar first."]]),
@@ -1535,6 +1574,21 @@ const CHOICES={
       "Оставить и уйти","Leave it and walk away","Забрать всё","Take it all",1,-1,"final",
       [["Лёха закрыл дверь гаража и пошёл к окраине города.","Lyokha shut the garage door and walked toward the edge of town."],
        ["Лёха взял общак. Руки не дрожали — и это пугало.","Lyokha took the stash. His hands did not shake — and that was the frightening part."]])};
+/* Варианты реплик, если Кабан убит на стрелке (глава 3): его роль играет Рыжий. */
+const ALT={
+ 4:{pre:[["L","Михалыч, где общак? После стрелки все следы ведут к тебе.","Mikhalych, where's the stash? After the meeting every trail leads to you."],
+        ["M","Не я это, Лёха. Заходи в «Ракушку», там всё объясню.","It wasn't me, Lyokha. Come to the Rakushka, I'll explain everything."]]},
+ 5:{post:[["G","Лёха, Рыжий не чище Кабана. Ты опять не у тех работаешь.","Lyokha, Redhead is no better than Boar. You work for the wrong guys again."]]},
+ 7:{pre:[["N","1997 год. Рыжий снял люкс в гостинице «Арзамас» и позвал тебя на разговор.","1997. Redhead booked a suite at Hotel Arzamas and called you in for a talk."],
+        ["R","Приходи один. Поговорим про общак. Возьми ствол.","Come alone. We'll talk about the stash. Bring a gun."]],
+    post:[["R","Не стреляй! Михалыч жив. Он в Сочи, а общак в гаражах. Без меня туда не пройти.","Don't shoot! Mikhalych is alive. He's in Sochi, and the stash is in the garages. You can't get there without me."],
+          ["L","Договорились. Один раз.","Deal. Just once."]]},
+ 8:{pre:[["N","1998 год. Рыжий обмолвился о гаражах — слишком быстро, чтобы это было случайностью.","1998. Redhead mentioned the garages by accident — too quickly for it to be an accident."]]},
+ 9:{post:[["R","Михалыч мне сводный брат, дурень! Мы вдвоём тебя разводили, а ты всё сделал сам.","Mikhalych is my half-brother, idiot! We played you together, and you did all the work."]]}};
+const BOAR_CHOICE=CH("Рыжий шепчет: «Отпусти — и я скажу, где общак на самом деле».","Redhead whispers: «Let me go and I'll tell you where the stash really is».",
+      "Не верить ему","Don't trust him","Согласиться","Agree with him",1,-1,"boar2",
+      [["Лёха держал ствол под столом. Рыжему не верят.","Lyokha kept the gun under the table. Redhead is not to be trusted."],
+       ["Лёха кивнул. Он уже знал, что предаст Рыжего первым.","Lyokha nodded. He already knew he would betray Redhead first."]]);
 // Дело о двух ведомостях: исходные главы и их индексы сохраняются до кооператива.
 const casebook=[
  ["Копирка","flat","Вера","За август мать расписалась дважды. Второй раз уже после больницы.","На обороте листа отпечатался номер чужого автобуса."],
@@ -1576,6 +1630,7 @@ if(had&&S.campaignVersion!==2&&S.mission>=9)S.mission+=20;S.campaignVersion=2;S.
 let last=0,accumulator=0,timeSave=0,RA=0;
 function recordPlayTime(dt){if(document.hidden||!P||!["play","cut"].includes(state)||!Number.isFinite(dt)||dt<=0||dt>1)return;const key=state==="cut"?"readSeconds":"playSeconds";S[key]=(S[key]||0)+dt;const chapter=(S.chapterSeconds||={});chapter[mi]=(chapter[mi]||0)+dt;if((timeSave+=dt)>=60){timeSave=0;save()}}
 const FIXED_DT=1/60;
-function loop(ts){const realDt=last?(ts-last)/1000:0,dt=Math.min(.1,realDt);recordPlayTime(realDt);last=ts;accumulator+=dt;pollPad();let steps=0;while(accumulator>=FIXED_DT&&steps<6){update(FIXED_DT);accumulator-=FIXED_DT;steps++}RA=Math.min(1,accumulator/FIXED_DT);followCam(dt);for(let i=BLD.length-1;i>=0;i--){BLD[i].t=(BLD[i].expires-ts)/1000;if(BLD[i].t<=0)BLD.splice(i,1)}animateMap(dt);render();requestAnimationFrame(loop)}
+function loop(ts){const realDt=last?(ts-last)/1000:0,dt=Math.min(.1,realDt);recordPlayTime(realDt);last=ts;accumulator+=dt;pollPad();let steps=0;while(accumulator>=FIXED_DT&&steps<6){update(FIXED_DT);accumulator-=FIXED_DT;steps++}RA=Math.min(1,accumulator/FIXED_DT);followCam(dt);for(let i=BLD.length-1;i>=0;i--){BLD[i].t=(BLD[i].expires-ts)/1000;if(BLD[i].t<=0)BLD.splice(i,1)}
+ for(let i=CORPSES.length-1;i>=0;i--){CORPSES[i].t=(CORPSES[i].expires-ts)/1000;if(CORPSES[i].t<=0)CORPSES.splice(i,1)}animateMap(dt);render();requestAnimationFrame(loop)}
 requestAnimationFrame(loop);
 </script></body></html>
