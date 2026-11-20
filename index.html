@@ -30,11 +30,13 @@ dialog button:hover{background:#4b5043}dialog button:focus-visible,dialog select
 </dialog>
 <script>
 "use strict";
-const W=180,H=320,RX=[200,600,1000],RY=[200,600,1000],CITY_SCALE=1.5;let WW=3600,WH=2700;
+let W=180;const H=320,RX=[200,600,1000],RY=[200,600,1000],CITY_SCALE=1.5,PLAYER_SPEED=.9;let WW=3600,WH=2700;
 const cv=document.getElementById("c"),g=cv.getContext("2d");
 cv.width=W*2;cv.height=H*2;g.scale(2,2);g.imageSmoothingEnabled=false;
 function fit(){const vv=window.visualViewport,cs=getComputedStyle(document.documentElement),ph=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
- const vw=vv?vv.width:innerWidth,vh=vv?vv.height:innerHeight,s=Math.min(vw/W,Math.max(1,vh-ph)/H);
+ const vw=vv?vv.width:innerWidth,vh=Math.max(1,(vv?vv.height:innerHeight)-ph);
+ W=Math.max(180,Math.min(576,Math.round(H*vw/vh)));const s=Math.min(vw/W,vh/H);
+ cv.width=W*2;cv.height=H*2;g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;
  cv.style.width=Math.floor(W*s)+"px";cv.style.height=Math.floor(H*s)+"px"}
 addEventListener("resize",fit);addEventListener("orientationchange",()=>setTimeout(fit,150));
 if(window.visualViewport){visualViewport.addEventListener("resize",fit);visualViewport.addEventListener("scroll",fit)}
@@ -53,7 +55,7 @@ const SK={
  jacket:{n:"Кожанка",p:0,top:"#3a2a1c",arm:"#4a3626",pants:"#1c1c24",hair:"#2a1a10"},
  sport:{n:"Спортивка «Адидас»",p:500,top:"#2848a8",arm:"#3a5ac0",pants:"#1a2a70",hair:"#caa060"},
  blazer:{n:"Малиновый пиджак",p:1600,top:"#a01848",arm:"#c02860",pants:"#181818",hair:"#101010"}};
-let S={mission:0,rub:0,owned:["jacket"],skin:"jacket",lang:"ru",debt:0,wp:[0],karma:0,tags:{},pad:"xbox"},had=false;
+let S={mission:0,rub:0,owned:["jacket"],skin:"jacket",lang:"ru",debt:0,wp:[0,6],karma:0,tags:{},pad:"xbox"},had=false;
 const ASSETS={player:null,enemy:null}; // сюда можно подставить Image 16x16 (взгляд вправо)
 const EK={top:"#4a5240",arm:"#586050",pants:"#2a2a2a",hair:"#6a5a40",img:"enemy"};
 
@@ -61,24 +63,25 @@ const EK={top:"#4a5240",arm:"#586050",pants:"#2a2a2a",hair:"#6a5a40",img:"enemy"
 const SP={L:{n:"Лёха",h:"#2a1a10",c:"#3a2a1c"},M:{n:"Михалыч",h:"#999",c:"#a01848"},K:{n:"Кабан",h:"#181818",c:"#385a30"},G:{n:"Гера",h:"#6a4a2a",c:"#506880"},N:{n:"Рассказчик",h:"#555",c:"#333"}};
 const MS=[
 {n:"Должок",pay:400,sp:[],steps:[{t:"enterArea",k:"mkt",tx:"Зайди на рынок и найди Геру"},{t:"talk",who:"gera",tx:"Поговори с Геро́й без драки"},{t:"exitArea",tx:"Выйди с рынка"}],
- pre:[["N","Арзамас, 1991-й. Завод режет смены, цены меняются быстрее ценников, а в кармане — мелочь на хлеб."],["M","Лёха, Гера с рынка должен восемьсот. Ты только вернулся — сходи поговори. Без ствола и без шума."],["L","Я на окраине, Михалыч. Даже дороги толком не знаю."],["M","Тогда запомни: рынок у Комсомольской. Сначала слушай, потом решай."],["N","Ты вышел из посёлка у западной окраины. Город ещё не знает, кем ты станешь."]],
- post:[["G","Не я должен, Лёха. Кабан забрал выручку и велел молчать."],["L","А Михалыч сказал, что долг твой."],["G","В этом городе все долги кому-нибудь принадлежат."]]},
+ pre:[["N","Арзамас, сентябрь 1991-го. Завод АТЗ порезал вторую смену, в проходной толпятся мужики с трудовыми книжками. Цены в ларьках меняются дважды в день, а в кармане у Лёхи — мелочь на чёрствый батон и сдача с автовокзала."],["M","Лёха, ты вернулся из армии — и сразу к делу. Гера с Колхозного рынка должен мне восемьсот рублей. Немного, но порядок дороже денег. Сходи, поговори. Без ствола, без шума — просто слушай и верни ответ."],["L","Михалыч, я только с автостанции. На окраине вырос, а центр теперь не узнаю: ларьки вместо лавок, морды незнакомые. Дорог не знаю."],["M","Рынок — у Комсомольской площади. Ряды с утра до обеда, Гера в середине, семечки и вёдра. Найдёшь — сначала молчи и слушай. Решать будешь сам, я в твои дела лезть не буду."],["L","А если не отдаст?"],["M","Значит, у него есть кто-то сильнее. Это тоже ответ. Иди."],["N","Лёха вышел из посёлка у западной окраины. Город ещё не знал, кем он станет. Он и сам этого не знал."]],
+ post:[["G","Лёх, не я отказываюсь. Кабан после ярмарки зашёл в ларёк, забрал всю выручку и велел сидеть тихо. Что я мог сделать при свидетелях?"],["L","Я пришёл не слушать про Кабана. Михалыч сказал — долг твой, и я за ним."],["G","Михалыч сказал. А Кабан забрал. Теперь скажи мне: кому я на самом деле должен — тому, кто дал в долг, или тому, кто отнял?"],["L","Мне нужен ответ, а не философия."],["G","Ответ один, Лёха: в этом городе все долги кому-то принадлежат. Ты просто ещё не знаешь, кому."]]},
 {n:"Колёса",pay:500,car:[590,650,1,"#2a7a40"],sp:[],steps:[{t:"enter",tx:"Сядь в зелёную девятку (Е)"},{t:"drive",x:1000,y:300,tx:"Пригони её к гаражам"}],
- pre:[["M","Кабан наглеет. Для разговора нужны колёса. Зелёная девятка у центра, ключи в замке, как обычно."],["L","То есть мы её угоняем?"],["M","Мы её одалживаем у города. Гони к гаражам."]],
- post:[["M","Молодец. Кабан сам позвал нас на стрелку у ДК. Иди один, я подъеду позже."],["L","Один?.."]]},
+ pre:[["N","После рынка Лёха вернулся к Михалычу с пустыми руками и полной головой. Кабан не просто забрал деньги — он показал, кто в районе хозяин."],["M","Кабан наглеет. Он не боится меня, потому что у него есть колёса, а у нас нет. Для разговора на равных нужна машина. Зелёная «девятка» стоит у центра, ключи в замке — я проследил."],["L","То есть мы её угоняем?"],["M","Мы её одалживаем у города. У нас гараж, а не рэкет. Гони к кооперативу, я скажу, куда дальше."],["N","«Девятка» была заведена, как будто кто-то ждал. Лёха сел за руль и выехал на Коммунистов."]],
+ post:[["M","Молодец, не заглушил по дороге. Кабан сам позвал нас на стрелку у ДК в субботу. Я подъеду, но позже — не хочу, чтобы он видел нас вдвоём."],["L","То есть я приеду один и буду ждать, пока ты соизволишь?"],["M","Ты приедешь один и покажешь, что не боишься. Это половина разговора. Вторую половину сделаю я."],["L","А если Кабан решит, что я приманка?"]]},
 {n:"Перед стрелкой",pay:700,sp:[],steps:[{t:"enterArea",k:"church",tx:"Зайди в церковь перед стрелкой"},{t:"pray",k:"church",tx:"Поставь свечу и помолись"},{t:"exitArea",tx:"Выйди из церкви"},{t:"drive",x:1781,y:1002,tx:"Езжай к ДК"},{t:"kill",tx:"Отбейся от людей Кабана"}],
- pre:[["N","Впервые в городе назначена стрелка. Михалыч говорит, что разговор короткий."],["M","Перед тем как ехать к ДК, зайди в церковь. Поставь свечу. Не для меня — для себя."],["L","Ты же знаешь, я не верю."],["M","Тогда просто постой в тишине. Дальше решать будешь сам."]],
- post:[["K","Стой, стой! Общак Михалыч унёс, а не я! Он тебя подставил!"],["L","Врёшь!"],["K","Мне-то зачем? Спроси у него в «Ракушке»."]]},
+ pre:[["N","Суббота. Впервые в Арзамасе назначена стрелка между двумя людьми, которые до этого говорили только через чужие слова. Михалыч сказал: разговор будет короткий."],["M","Прежде чем ехать к ДК, зайди в церковь на Соборной. Поставь свечку. Не за здравие, не за упокой — просто постоять в тишине."],["L","Ты же знаешь, я не верю. И не за этим."],["M","Я не прошу верить. Я прошу подумать одному, без людей и без моего голоса. В храме тебя никто не найдёт — это единственное место в городе, где Кабан не суетится. Дальше сам."],["N","Лёха зашёл в полупустой храм. Восковые свечи пахли гарью, за алтарём бормотал старик. Лёха постоял молча, поставил свечу и ушёл, не помолившись."],["M","Ну что, подумал? Тогда садись в девятку и гони к ДК. Я буду там чуть позже."]],
+ post:[["N","Двое парней у колонн были не из бригады Кабана — чужие, с тупыми палками. Лёха отбился и узнал: их привёл не Кабан. Сам Кабан стоял у стены, один, без оружия."],["K","Стой, стой! Это не мои! Я позвал поговорить, а не резаться. Общак Михалыч унёс, а не я! Он тебя подставил, чтобы ты разбирался со мной, а он тем временем уходил."],["L","Врёшь! Зачем тебе это знать и молчать?"],["K","Мне-то зачем врать? Он и меня кинет, как только ты его отвлечёшь. Ищи его сегодня в «Ракушке», пока он не растворился."],["N","Кабан ушёл в темноту без людей, без угрозы. Впервые Лёха не знал, кому верить."]]},
 {n:"Ракушка",pay:900,sp:[[990,780,990,740],[1010,860,1010,900],[995,820,995,850],[1005,790,1005,770],[990,880,990,850],[1010,760,1010,720]],steps:[{t:"go",x:1000,y:780,tx:"Найди Михалыча в баре «Ракушка»"},{t:"kill",tx:"Выживи"}],
- pre:[["L","Михалыч, где общак? Кабан говорит, ты его унёс."],["M","Кабан врёт. Заходи в «Ракушку», там всё объясню."]],
- post:[["L","Это были люди Михалыча. Он меня сдал."],["N","На стойке записка: «Общак в гаражах. Не торопись. М.»"]]},
-{n:"Общак",pay:1500,sp:[],steps:[{t:"drive",x:2653,y:1493,tx:"Езжай к гаражному кооперативу"},{t:"enterArea",k:"garage",tx:"Войди в кооператив"},{t:"kill",tx:"Отбейся от людей Михалыча"},{t:"interact",k:"garage",id:"stash",tx:"Забери общак с верстака"}],
- pre:[["L","В гаражи. Хватит бегать."],["N","На этот раз кооператив встречает тебя светом фар. За воротами ждут не только ответы."]],
- post:[["K","Михалыч мне сводный брат, дурень! Мы вдвоём тебя разводили, а ты всё сделал сам."],["M","Ничего личного, Лёха. Сочи зовёт."],["N","В гараже ржавая «Волга» и записка: «Уехали отдыхать. Бита — тебе»."],["L","Ну, Арзамас. Теперь я сам себе Михалыч."],["N","Через неделю у ДК к Лёхе подошёл незнакомец в кожанке."],["N","Выстрел. Арзамас, 1999 год. Лёху Шестерёнкина похоронили на старом кладбище за счёт города."],["N","Так заканчивались девяностые."]]}];
+ pre:[["N","Лёха нашёл Михалыча не сразу. Бар «Ракушка» — единственное место, где тот бывал днём без бригады. Внутри пахло жареным луком, водкой и нафталином от старых занавесок."],["L","Михалыч, где общак? Кабан на стрелке сказал, что ты его унёс. Что люди у ДК были твои."],["M","Кабан тебе сказал. А ты ему поверил? Садись. Я всё объясню, но сначала закажи себе обед — ты голодный и злой, а злой слушает плохо."],["L","Мне не до обеда. Говори."],["M","Общак не у меня и не у Кабана. Но там, где он лежит, тебе сейчас не место. Сначала разберись, кому веришь. Запиши адрес на стойке, потом заберёшь."]],
+ post:[["N","Пока Лёха разговаривал, Михалыч вышел «покурить» через чёрный ход и не вернулся. Потом из-за стойки поднялись двое. Лёха узнал: те же, что были у ДК. Люди Михалыча."],["L","Это были его люди. Он привёл меня сюда не говорить, а разводить. Отвлекал, чтобы взяли на выходе."],["N","На стойке, под стаканом, лежала сложенная записка. Почерк Михалыча: «Общак в гаражах. Не торопись. М.»"],
+["N","Бармен вытирал стакан, смотрел в стену и молчал так, что было понятно всё: он видел, как Михалыч уходил через подсобку ещё до драки."]]},
+{n:"Общак",pay:1500,sp:[],steps:[{t:"drive",x:2653,y:1493,tx:"Езжай к гаражному кооперативу"},{t:"enterArea",k:"garage",tx:"Войди в кооператив"},{t:"kill",tx:"Уничтожь 15 людей Михалыча в кооперативе"},{t:"interact",k:"garage",id:"stash",tx:"Забери общак с верстака"}],
+ pre:[["L","Гаражный кооператив, западная промзона. Записка Михалыча, слова Кабана — оба вели в одно место. Хватит бегать по чужим намёкам."],["N","На этот раз кооператив встречает светом фар — кто-то специально оставил ворота открытыми. За воротами ждут не только ответы. Внутри кооператива пахнет маслом, ржавчиной и тревогой."],["L","Если здесь ещё одна ловушка, я её не обойду. Войду и заберу всё, что моё."],["N","Лёха зашагал между боксами. Рифлёные ворота, запертые на висячие замки, чей-то приёмник из-за железной стены."]],
+ post:[["K","Михалыч мне сводный брат, дурень! Мы вдвоём тебя разводили с первого дня: он подсылал, я отворачивал, ты всё сам делал. Ни один из нас пальцем не пошевелил."],["M","Ничего личного, Лёха. Сочи зовёт, а здесь делать нечего. Ты вырос — я рад за тебя. Общак бери, он честно твой."],["N","В гараже — ржавая «Волга», ящик инструментов и записка: «Уехали отдыхать. Бита на крючке — тебе. Не ищи нас». На верстаке общак, перевязанный бечёвкой."],["L","Ну, Арзамас. Теперь я сам себе Михалыч. Кабан смотрит и не знает, шутить ему или бояться."],["N","Через неделю у ДК к Лёхе подошёл незнакомец в кожанке. Лёха не успел разглядеть — чужой район, чужое лицо."],["N","Выстрел. Арзамас, 1999 год. Лёху Шестерёнкина похоронили на старом кладбище за счёт города — без отпевания и без свидетелей."],["N","Михалыч так и не вернулся из Сочи. Кабан открыл ларёк на рынке, торгует мясом. Рыжий сидит в колонии под Нижним."],["N","Гаражный кооператив снесли под торговый центр в 2003-м. «Волга» так и стоит — ржавая, с запиской в бардачке."],["N","Так заканчивались девяностые — не выстрелом, а тишиной после него."]]}];
 try{const raw=localStorage.getItem(KEY);if(raw){const t=JSON.parse(raw);if(t&&typeof t==="object"){S=Object.assign(S,t);had=true}}}catch(e){}
 S.mission=Math.max(0,S.mission|0);S.rub=Number.isFinite(+S.rub)?Math.max(0,+S.rub):0;
 if(!Array.isArray(S.owned)||!S.owned.includes("jacket"))S.owned=["jacket"];
-if(!SK[S.skin]||!S.owned.includes(S.skin))S.skin="jacket";if(!Array.isArray(S.wp)||!S.wp.includes(0))S.wp=[0];S.wp=S.wp.filter((v,i,a)=>Number.isInteger(v)&&v>=0&&v<6&&a.indexOf(v)===i);S.debt=Number.isFinite(+S.debt)?Math.max(0,+S.debt):0;
+if(!SK[S.skin]||!S.owned.includes(S.skin))S.skin="jacket";if(!Array.isArray(S.wp)||!S.wp.includes(0))S.wp=[0,6];if(!S.wp.includes(6))S.wp.push(6);S.wp=S.wp.filter((v,i,a)=>Number.isInteger(v)&&v>=0&&v<7&&a.indexOf(v)===i);if(!Array.isArray(S.seized))S.seized=[];S.seized=S.seized.filter((v,i,a)=>Number.isInteger(v)&&v>0&&v<7&&a.indexOf(v)===i);S.debt=Number.isFinite(+S.debt)?Math.max(0,+S.debt):0;
 if(S.cityMapVersion!==4&&S.garage){S.garage.relocate=true}
 function save(){S.cityMapVersion=4;S.campaignVersion=2;try{localStorage.setItem(KEY,JSON.stringify(S));had=true}catch(e){}}
 
@@ -87,7 +90,7 @@ const MD=[
  {n:"ВАЗ-2106",L:17,W:8,v:115,a:60,cols:["#d8d0b0","#8a2020","#6a4a2a"]},
  {n:"ВАЗ-2109",L:15,W:8,v:140,a:75,cols:["#2a7a40","#8aa0b0","#c0c0c0"]},
  {n:"ВАЗ-2107",L:17,W:8,v:120,a:62,cols:["#701818","#d0d0d0","#204880"]},
- {n:"ГАЗ-3110 «Волга»",L:20,W:9,v:135,a:55,cols:["#101010","#d0d0d0"]},
+ {n:"ГАЗ-3110 «Волга»",L:20,W:9,v:135,a:55,cols:["#868c94","#9aa0a8","#6f757c"]},
  {n:"ПАЗ-3205",L:30,W:11,v:85,a:30,cols:["#d0b020"]}];
 MD.forEach(m=>{m.L=Math.round(m.L*1.3);m.W=Math.round(m.W*1.25)});MD.push({n:"BMW E34",L:26,W:11,v:160,a:90,cols:["#101018","#1a2a5a","#5a1010"]});MD[4].n="ПАЗ-672";MD.push({n:"Mercedes W124",L:24,W:11,v:150,a:80,cols:["#d0d0c8","#1a3a2a","#101010"]},{n:"Porsche 911",L:23,W:11,v:195,a:115,cols:["#c01010","#e8e8e8","#101018"]},{n:"ГАЗ-53",L:40,W:15,v:92,a:32,cols:["#2a5a3a","#8a2020"]},{n:"КамАЗ-5320",L:50,W:16,v:105,a:38,cols:["#2a4a8a","#c08020"]});MD.forEach((m,i)=>m.cl=[0,0,0,0,2,1,0,1,2,2][i]);
 // g — сцепление (чем проще марка, тем сильнее сносит в повороте); fault — шанс поломки; mass — масса для импульса.
@@ -199,7 +202,7 @@ const roadScratch={x:0,y:0,tx:0,ty:0};
 function roadPt(r,s,out=roadScratch){s=Math.max(0,Math.min(r.len,s));let i=1;while(i<r.pts.length-1&&r.cum[i]<s)i++;const a=r.pts[i-1],b=r.pts[i],d=Math.hypot(b[0]-a[0],b[1]-a[1])||1,t=(s-r.cum[i-1])/d;out.x=a[0]+(b[0]-a[0])*t;out.y=a[1]+(b[1]-a[1])*t;out.tx=(b[0]-a[0])/d;out.ty=(b[1]-a[1])/d;return out}
 const busRoad=(()=>{const pts=[[175,173],[214,187],[270,205],[342,226],[341,298],[331,340],[265,346],[214,339],[196,312],[196,294],[186,265],[178,218],[175,173]].map(q=>sheet(...q)),cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));return{pts,cum,len:cum[cum.length-1]}})();
 // Остановки на прямых участках, площадки целиком за краем тротуара.
-const busStops=[0,2,4,7,10].map(i=>(busRoad.cum[i]+busRoad.cum[i+1])/2);
+const busStops=[0,2,4,7].map(i=>(busRoad.cum[i]+busRoad.cum[i+1])/2);
 const busPlatforms=busStops.map(al=>{const q=roadPt(busRoad,al);let width=0;for(const r of RD)if(polyDist(r.pts,q.x,q.y)<1)width=Math.max(width,r.w);
  const off=width/2+15;return{x:q.x-q.ty*off,y:q.y+q.tx*off,a:Math.atan2(q.ty,q.tx),al}});
 /* Уличные фонари: ровно вдоль тротуаров, попеременно по сторонам улицы. */
@@ -250,11 +253,11 @@ function fillPanels(st,x0,y0,x1,y1){const a=TP(x0,y0),b=TP(x1,y1),deep=(st==="mi
  TG.rynok=[DOORP.mkt[0],DOORP.mkt[1]+16*CITY_SCALE];TG.hot=[DOORP.rest[0],DOORP.rest[1]+16*CITY_SCALE];
  TG.gar=DOORP.garage;
  /* Боксы гаражного кооператива окружают сам ориентир «ГАРАЖИ», а не пустое место. */
- for(let i=0;i<5;i++){const a=i/5*6.283,x=TG.gar[0]+Math.cos(a)*86*CITY_SCALE-11*CITY_SCALE,y=TG.gar[1]+Math.sin(a)*86*CITY_SCALE-6*CITY_SCALE,w=22*CITY_SCALE,h=12*CITY_SCALE;if(okR(x,y,w,h,4))add(x,y,w,h,"b","#6a5a50","","garage")}
+ for(let i=0;i<5;i++){if(i===4)continue;const a=i/5*6.283,x=TG.gar[0]+Math.cos(a)*86*CITY_SCALE-11*CITY_SCALE,y=TG.gar[1]+Math.sin(a)*86*CITY_SCALE-6*CITY_SCALE,w=22*CITY_SCALE,h=12*CITY_SCALE;if(okR(x,y,w,h,4))add(x,y,w,h,"b","#6a5a50","","garage")}
  TG.church=DOORP.church;TG.police=DOORP.police;
  TG.stn=DOORP.bus;for(const z of ZN){if(z[0]==="micro10"||z[0]==="micro11")continue;fillZone(z[0],z[1],z[2],z[3],z[4],Math.round(z[5]*1.3))}
  fillPanels("micro10",610,205,875,470);fillPanels("micro11",675,730,950,1040);
- for(let row=0;row<2;row++)for(let col=0;col<2;col++){const p=TP(785+col*18,385+row*13),w=15*CITY_SCALE,h=9*CITY_SCALE;if(okR(p[0],p[1],w,h,3))add(p[0],p[1],w,h,"b","#74736d","","garage")}
+ for(let col=0;col<2;col++){const p=TP(785+col*18,385),w=15*CITY_SCALE,h=9*CITY_SCALE;if(okR(p[0],p[1],w,h,3))add(p[0],p[1],w,h,"b","#74736d","","garage")}
  /* Квартира главного героя — ближайший жилой дом к точке старта */
  (function(){let best=null,bd=1e9;for(const b of WL){if(b.t!=="b")continue;if(b.st!=="stal"&&b.st!=="khr"&&b.st!=="pan")continue;const d=Math.hypot(b.x+b.w/2-TG.start[0],b.y+b.h/2-TG.start[1]);if(d<bd){bd=d;best=b}}
   if(!best)return;const dx=best.x+best.w/2;let dy=null;
@@ -270,7 +273,18 @@ function fillPanels(st,x0,y0,x1,y1){const a=TP(x0,y0),b=TP(x1,y1),deep=(st==="mi
  for(let i=0;i<64;i++){const r=RD[sr()*RD.length|0],q=roadPt(r,sr()*r.len),side=sr()<.5?-1:1,pb=sr()<.5,off=r.w/2+5*CITY_SCALE,x=q.x-q.ty*side*off,y=q.y+q.tx*side*off,z=(pb?5:4)*CITY_SCALE;if(okR(x,y,z,z,2))add(x,y,z,z,pb?"ph":"bin")}
  for(let i=0;i<24;i++){const r=RD[sr()*RD.length|0],q=roadPt(r,sr()*r.len),side=sr()<.5?-1:1,off=r.w/2+12*CITY_SCALE,x=q.x-q.ty*side*off,y=q.y+q.tx*side*off,w=14*CITY_SCALE,h=11*CITY_SCALE;if(okR(x,y,w,h,2))add(x,y,w,h,"k2",pick(["#4a6a8a","#8a6a3a"]))}
  const L2=["ПРОДУКТЫ","ШИНОМОНТАЖ","ПИВО","ХЛЕБ","СБЕРКАССА","КАФЕ","ПАРИКМАХЕРСКАЯ"];
- for(const b of WL)if(b.t==="b"&&!b.l&&b.w>=56*CITY_SCALE&&b.c!=="#6a5a50"&&b.c!=="#3a5a8a"&&sr()<.35)b.l=pick(L2)})();
+ for(const b of WL)if(b.t==="b"&&!b.l&&b.w>=56*CITY_SCALE&&b.c!=="#6a5a50"&&b.c!=="#3a5a8a"&&sr()<.35)b.l=pick(L2)
+ /* Районы частного сектора: Лесной, Ивановка и 408 км. */
+ function privDistrict(cx,cy,cols,rows){const COLS=["#6a3a2a","#3a5a3a","#5a4a3a","#4a5a7a"],px=26*CITY_SCALE,py=22*CITY_SCALE;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){if((r*3+c*5)%10<2)continue;const w=(15+(r+c)%3)*CITY_SCALE,h=12*CITY_SCALE,x=cx+(c-(cols-1)/2)*px-w/2,y=cy+(r-(rows-1)/2)*py-h/2;
+   if(!okR(x,y,w,h,5))continue;add(x,y,w,h,"h",COLS[(r+c)%4]);
+   if(okR(x-3*CITY_SCALE,y+h+2*CITY_SCALE,w+6*CITY_SCALE,2*CITY_SCALE,3))add(x-3*CITY_SCALE,y+h+2*CITY_SCALE,w+6*CITY_SCALE,2*CITY_SCALE,"wf")}}
+ privDistrict(sheet(376,434)[0],sheet(376,434)[1],6,5);
+ privDistrict(sheet(191,416)[0]+104,sheet(191,416)[1],6,5);
+ privDistrict(sheet(226,20)[0],sheet(226,20)[1],6,4);
+ /* Густой лес к северу от Кирилловки, с просеками для прохода. */
+ (function(){const x0=3100,x1=3572,y0=1080,y1=1470,st=8*CITY_SCALE;
+  for(let y=y0;y<y1;y+=st)for(let x=x0;x<x1;x+=st){const tx=x+sr()*st,ty=y+sr()*st;if(Math.abs(tx-3330)<13||Math.abs(ty-1290)<13)continue;const z=7*CITY_SCALE;if(okR(tx,ty,z,z,3))add(tx,ty,z,z,"tr")}})()})();
 function buildGround(){
  const c=mk(WW,WH),x=c.getContext("2d");sd=9;
  x.fillStyle="#4a5238";x.fillRect(0,0,WW,WH);
@@ -317,8 +331,6 @@ function buildGround(){
   x.fillStyle="#c9a94f";x.fillRect(px+1*CITY_SCALE,py+2*CITY_SCALE,1.6*CITY_SCALE,ph-4*CITY_SCALE);
   x.fillStyle="#5a554d";for(let i=0;i<3;i++){const cy=py+14*CITY_SCALE+i*(ph-24*CITY_SCALE)/2;x.fillRect(px+5*CITY_SCALE,cy,3*CITY_SCALE,3*CITY_SCALE)}})();
  for(let i=0;i<9000;i++){const r=RD[sr()*RD.length|0],q=roadPt(r,sr()*r.len);x.fillStyle=sr()<.5?"#34343a":"#47474d";x.fillRect(q.x+(sr()-.5)*r.w,q.y+(sr()-.5)*r.w,1+(sr()*2|0),1)}
- // Sparse power lines mark the newer residential edge without obstructing movement.
- const power=[[690,700],[760,735],[830,770],[910,805]].map(q=>TP(q[0],q[1]));x.strokeStyle="rgba(34,38,37,.65)";x.lineWidth=CITY_SCALE;x.beginPath();power.forEach((q,i)=>i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]));x.stroke();for(const q of power){x.fillStyle="#55564f";x.fillRect(q[0]-2*CITY_SCALE,q[1]-2*CITY_SCALE,4*CITY_SCALE,4*CITY_SCALE)}
  return c}
 /* Жилые дома видом сверху: сталинка / хрущёвка / панелька — рисуется кровля, а не сетка окон */
 function houseTop(c,X,Y,Wd,Hh,w){
@@ -679,20 +691,20 @@ cv.addEventListener("pointerdown",e=>{
  const p=lp(e),isM=e.pointerType==="mouse";if(!isM)touch=true;
  if(isM){mouse.x=p.x;mouse.y=p.y;mouse.has=true}
  if(state==="cut"){const ln=cut&&cut.l[cut.i];if(ln&&ln.o){if(p.y>=242&&p.y<268)choose(0);else if(p.y>=268&&p.y<=296)choose(1);return}nextLine();return}
- if(state==="map"&&p.x>=8&&p.x<=172&&p.y>=30&&p.y<=254){mapPointerDown(e.pointerId,p);return}
+ if(state==="map"&&p.x>=8&&p.x<=W-8&&p.y>=30&&p.y<=254){mapPointerDown(e.pointerId,p);return}
  if(state==="play"){
-  if(p.x>164&&p.y<16){state="pause";resetInput();return}
+  if(p.x>W-16&&p.y<16){state="pause";resetInput();return}
   if(isM){if(e.button===2)meleeReq=true;else mouse.down=true;return}
-  if(!P.car&&Math.hypot(p.x-150,p.y-222)<12){dashId=e.pointerId;dashReq=true;return}
-  if(Math.hypot(p.x-150,p.y-250)<15){actReq=true;return}
-  if(Math.hypot(p.x-150,p.y-285)<22){if(P.car)gasId=e.pointerId;else fireId=e.pointerId;return}
-  if(P.car&&Math.hypot(p.x-88,p.y-300)<13){revId=e.pointerId;return}
-  if(!P.car&&Math.hypot(p.x-88,p.y-302)<12){swW();return}
-  if(Math.hypot(p.x-120,p.y-300)<18){if(P.car)brkId=e.pointerId;else meleeReq=true;return}
-  if(p.x<100&&stick.id===null)stick={id:e.pointerId,ox:p.x,oy:p.y,x:p.x,y:p.y};
+  if(!P.car&&Math.hypot(p.x-(W-30),p.y-222)<12){dashId=e.pointerId;dashReq=true;return}
+  if(Math.hypot(p.x-(W-30),p.y-250)<15){actReq=true;return}
+  if(Math.hypot(p.x-(W-30),p.y-285)<22){if(P.car)gasId=e.pointerId;else fireId=e.pointerId;return}
+  if(P.car&&Math.hypot(p.x-(W-92),p.y-300)<13){revId=e.pointerId;return}
+  if(!P.car&&Math.hypot(p.x-(W-92),p.y-302)<12){swW();return}
+  if(Math.hypot(p.x-(W-60),p.y-300)<18){if(P.car)brkId=e.pointerId;else meleeReq=true;return}
+  if(p.x<W/2&&stick.id===null)stick={id:e.pointerId,ox:p.x,oy:p.y,x:p.x,y:p.y};
   return}
  for(const b of btns)if(b.fn&&p.x>b.x&&p.x<b.x+b.w&&p.y>b.y&&p.y<b.y+b.h){b.fn();break}});
-cv.addEventListener("pointermove",e=>{const p=lp(e);if(state==="map")mapPointerMove(e.pointerId,p);if(e.pointerType==="mouse"){mouse.x=p.x;mouse.y=p.y;mouse.has=true;arrowAim=false}if(e.pointerId===stick.id){stick.x=p.x;stick.y=p.y}});
+cv.addEventListener("pointermove",e=>{const p=lp(e);if(state==="map")mapPointerMove(e.pointerId,p);if(e.pointerType==="mouse"){mouse.x=p.x;mouse.y=p.y;mouse.has=true;if(!(keys.ArrowUp||keys.ArrowDown||keys.ArrowLeft||keys.ArrowRight))arrowAim=false}if(e.pointerId===stick.id){stick.x=p.x;stick.y=p.y}});
 function up(e){mapTouches.delete(e.pointerId);if(e.pointerId===stick.id)stick.id=null;if(e.pointerId===fireId)fireId=null;if(e.pointerId===gasId)gasId=null;if(e.pointerId===brkId)brkId=null;if(e.pointerId===revId)revId=null;if(e.pointerId===dashId)dashId=null;if(e.pointerType==="mouse")mouse.down=false}
 cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
 addEventListener("blur",()=>{resetInput();mapTouches.clear();if(state==="play")state="pause"});
@@ -709,7 +721,7 @@ addEventListener("keydown",e=>{
  if(e.code==="Escape"){if(state==="play"){state="pause";resetInput()}else if(state==="pause")state="play";else if(state==="map")closeMap();else if(state==="buy")state="play";return}
  if(e.code===bindings.map){if(state==="play"||state==="pause")openMap(state);else if(state==="map")closeMap();return}
  if(state==="map"){if(e.code==="Equal"||e.code==="NumpadAdd")zoomMap(1.3);if(e.code==="Minus"||e.code==="NumpadSubtract")zoomMap(1/1.3);return}
- if(state==="play"){if(e.code===bindings.melee)meleeReq=true;if(e.code===bindings.dash)dashReq=true;if(e.code===bindings.act)actReq=true;if(e.code===bindings.weapon)swW();if(/^Digit[1-6]$/.test(e.code)&&hasW(+e.code[5]-1))P.w=+e.code[5]-1}});
+ if(state==="play"){if(e.code===bindings.melee)meleeReq=true;if(e.code===bindings.dash)dashReq=true;if(e.code===bindings.act)actReq=true;if(e.code===bindings.weapon)swW();if(/^Digit[1-7]$/.test(e.code)&&hasW(+e.code[5]-1))P.w=+e.code[5]-1}});
 addEventListener("keyup",e=>{keys[e.code]=false});
 let AC;function snd(f,d,type,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),gn=AC.createGain();o.type=type||"square";o.frequency.value=f;gn.gain.value=v||.05;gn.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(gn);gn.connect(AC.destination);o.onended=()=>{o.disconnect();gn.disconnect()};o.start();o.stop(AC.currentTime+d)}catch(e){}}
 
@@ -719,11 +731,11 @@ let want=0,wantT=0,raidT=40,arrestT=0,copTheft=false;
 const AMMO=[];
 const YR=[1991,1991,1992,1993,1994,1995,1996,1997,1998,1999];
 const ENM=[
-{n:"The Debt",s:["Enter the market and find Gera","Talk to Gera, no trouble","Leave the market"],pre:["Arzamas, 1991. The factory cuts shifts, prices change faster than labels, and you have just enough for bread.","Lyokha, Gera owes us eight hundred. You just got back. Talk to him. No gun, no noise.","I'm on the outskirts, Mikhalych. I barely know the roads.","Then remember this: the market is by Komsomolskaya. Listen before you decide.","You came back from a settlement on the western edge. The city does not yet know what you will become."],post:["It isn't my debt, Lyokha. Boar took the takings and told me to keep quiet.","Mikhalych said it was yours.","In this town every debt belongs to somebody."]},
-{n:"Wheels",s:["Get in the green Zhiguli (E)","Bring it to the garages"],pre:["Boar is getting bold. We need wheels for a talk. Green Zhiguli downtown, keys in the ignition as usual.","So we're stealing it?","Borrowing it from the city. Drive to the garages."],post:["Well done. Boar called us to a meeting at the Culture House. Go alone, I'll come later.","Alone?.."]},
-{n:"Before the Meeting",s:["Enter the church","Light a candle","Leave the church","Drive to the Culture House","Fight off Boar's men"],pre:["The first meeting is set for tonight. Mikhalych tells you to stop at the church before you go.","You know I don't believe.","Then stand in the quiet. Decide what you believe after."],post:["Wait, wait! Mikhalych took the stash, not me! He set you up!","You're lying!","Why would I? Ask him at the Rakushka."]},
-{n:"Rakushka",s:["Find Mikhalych at the Rakushka bar","Survive"],pre:["Mikhalych, where's the stash? Boar says you took it.","Boar lies. Come to the Rakushka, I'll explain everything."],post:["Those were Mikhalych's men. He sold me out.","A note on the bar: The stash is in the garages. Don't rush. M."]},
-{n:"The Stash",s:["Drive to the garages","Enter the cooperative","Fight off Mikhalych's men","Take the stash"],pre:["Back to the cooperative. This time the doors are open. There is no turning around.","This time the headlights are already on. The answers are waiting behind the gates."],post:["Mikhalych is my half-brother, idiot! We played you together, and you did all the work.","Nothing personal, Lyokha. Sochi is calling.","In the garage: a rusty Volga and a note: Gone on vacation. The bat is yours.","Well, Arzamas. Now I'm my own Mikhalych.","A week later a stranger in a leather jacket walked up to Lyokha near the Culture House.","A shot. Arzamas, 1999. Lyokha Shesterenkin was buried at the old cemetery, at the city's expense.","That's how the nineties ended."]}];
+{n:"The Debt",s:["Enter the market and find Gera","Talk to Gera, no trouble","Leave the market"],pre:["Arzamas, September 1991. The APZ factory cut the second shift — men crowd the gate with their work books. Prices in kiosks change twice a day, and Lyokha has lint for a stale loaf and bus terminal small change.","Lyokha, you're back from the army and straight to business. Gera at the market owes me eight hundred. Small money, but order costs more. Go talk. No gun, no noise — just listen and bring me an answer.","Mikhalych, I just got off at the bus station. I grew up on the outskirts, but I don't recognize downtown: kiosks where shops were, strangers everywhere. I don't know the roads.","The market is by Komsomolskaya Square. Rows are full from morning to lunch, Gera is in the middle with sunflower seeds and buckets. Find him — first be quiet, then listen. You decide what to do, I won't push you.","And if he won't pay?","Then he has someone stronger behind him. That's an answer too. Go.","Lyokha left the settlement on the western edge. The city didn't yet know what he'd become. Neither did he."],post:["Lyokh, I'm not refusing. After the fair Boar walked into my stall, took every ruble of the takings and told me to keep quiet. What was I supposed to do with witnesses around?","I didn't come to hear about Boar. Mikhalych said the debt is yours, and I'm here for it.","Mikhalych said it. Boar took it. So tell me — who do I really owe? The one who lent, or the one who robbed?","I need an answer, not philosophy.","The answer is one, Lyokha: in this town every debt belongs to somebody. You just don't know who yet."]},
+{n:"Wheels",s:["Get in the green Zhiguli (E)","Bring it to the garages"],pre:["After the market Lyokha came back empty-handed and full of questions. Boar didn't just take the money — he showed who owns the district.","Boar's getting bold. He's not afraid of me because he has wheels and we don't. For an equal talk we need a car. Green Zhiguli downtown, keys in the ignition — I checked.","So we're stealing it?","Borrowing it from the city. We have a garage, not a racket. Drive to the cooperative, I'll tell you where next.","The Zhiguli was running, as if someone had been waiting. Lyokha got in and pulled onto Kommunistov Street."],post:["Well done, didn't stall once. Boar called us to a meeting at the Culture House Saturday. I'll come, but later — I don't want him seeing us together.","So I show up alone and wait until you grace me?","You show up alone and show you're not scared. That's half the talk. I'll do the other half.","And if Boar thinks I'm bait?"]},
+{n:"Before the Meeting",s:["Enter the church","Light a candle","Leave the church","Drive to the Culture House","Fight off Boar's men"],pre:["Saturday. First meeting in Arzamas between two men who've only spoken through other people's words. Mikhalych said the talk would be short.","Before you drive to the Culture House, stop at the church on Cathedral Square. Light a candle. Not for health, not for the dead — just stand in silence.","You know I don't believe. And I didn't come for that.","I'm not asking you to believe. I'm asking you to think alone, without people or my voice. The church is the one place Boar won't touch. The rest is on you.","Lyokha stepped into the half-empty church. Wax candles smelled of smoke, an old man mumbled behind the altar. He stood silent, lit a candle, and left without praying.","Well, did you think? Get in the Zhiguli and drive to the Culture House. I'll be there a little later."],post:["Two guys by the columns were not from Boar's crew — outsiders with blunt sticks. Lyokha fought them off and realized: Boar didn't send them. Boar himself stood by the wall, alone, unarmed.","Stop, stop! These aren't mine! I called to talk, not to fight. Mikhalych took the stash, not me! He set you on me so he could slip away while you were busy.","You're lying! Why would you know this and keep quiet?","Why would I lie? He'll drop me the moment you're distracted. Find him at the Rakushka tonight before he dissolves.","Boar walked into the dark alone, no threat, no men. For the first time Lyokha didn't know who to believe."]},
+{n:"Rakushka",s:["Find Mikhalych at the Rakushka bar","Survive"],pre:["Lyokha found Mikhalych not right away. The Rakushka bar was the one place he visited during the day without his crew. Inside smelled of fried onions, vodka, and mothballs from old curtains.","Mikhalych, where's the stash? Boar said at the meeting that you took it. That the guys at the Culture House were yours.","Boar told you that. And you believed him? Sit down. I'll explain everything, but first order lunch — you're hungry and angry, and angry men don't listen.","I don't want lunch. Talk.","The stash isn't with me and isn't with Boar. But where it is, you don't belong yet. First figure out who you trust. I wrote the address on a note, pick it up later."],post:["While Lyokha talked, Mikhalych stepped out for a smoke through the back and didn't come back. Then two men rose from behind the bar. Lyokha recognized them: the same ones at the Culture House. Mikhalych's men.","Those were his people. He brought me here not to talk but to stall. Distract me while they grabbed me outside.","A folded note on the bar, under a glass. Mikhalych's handwriting: The stash is in the garages. Don't rush. M.","The barman wiped a glass, stared at the wall, and stayed silent in a way that said everything: he'd seen Mikhalych leave through the storage room before the fight."]},
+{n:"The Stash",s:["Drive to the garages","Enter the cooperative","Take out 15 of Mikhalych's men in the cooperative","Take the stash"],pre:["The garage cooperative, the western industrial zone. Mikhalych's note, Boar's words — both pointed to the same place. No more running on other people's hints.","This time the headlights are on, the gates are left open — someone did it on purpose. Behind the gates wait more than answers. Inside it smells of oil, rust, and dread.","If this is another trap, I won't dodge it. I'll walk in and take what's mine.","Lyokha walked between the boxes. Diamond-plate gates with padlocks, someone's radio humming through the wall."],post:["Mikhalych is my half-brother, you idiot! From day one the two of us played you: he sent you, I looked away, and you did all the work. Neither of us lifted a finger.","Nothing personal, Lyokha. Sochi is calling and there's nothing left here. You grew up — I'm glad. Take the stash, you earned it.","In the garage: a rusty Volga, a toolbox, and a note: Gone on vacation. The bat is on the hook — yours. Don't look for us. On the workbench — the stash, tied with twine.","Well, Arzamas. Now I'm my own Mikhalych. Boar looks at me and doesn't know whether to joke or be afraid.","A week later a stranger in a leather jacket walked up to Lyokha near the Culture House. He didn't get a good look — wrong district, wrong face.","A shot. Arzamas, 1999. Lyokha Shesterenkin was buried at the old cemetery at the city's expense — no priest, no witnesses.","Mikhalych never came back from Sochi. Boar opened a stall at the market, sells meat. Redhead sits in a colony below Nizhny.","The cooperative was torn down for a mall in 2003. The Volga is still there — rusty, with a note in the glove box.","That's how the nineties ended — not with a gunshot, but with the silence after it."]}];
 const mname=i=>S.lang==="en"?ENM[i].n:MS[i].n;
 const stx=(i,j)=>(S.lang==="en"?ENM[i].s[j]:MS[i].steps[j].tx).replace(/\([ЕE]\)/g,"("+keyName(bindings.act)+")");
 const mlines=(i,k)=>(MS[i][k]||[]).map((l,j)=>[l[0],l[1],ENM[i]?.[k]?.[j]||l[1]]);
@@ -805,7 +817,7 @@ function rob(n){if(safeZone()||P.down>0)return;n.robd=true;n.pn=7;const g2=2+(rn
 const ESC=[["N","Поезд Арзамас — Москва тронулся. За окном плывут гаражи-ракушки и сугробы из окурков.","The Arzamas–Moscow train pulls out. Garage shells and cigarette drifts slide past.","N"],["L","Прощай, Арзамас. Хорошо, что я выбрался из этого города и из этого кошмара.","Goodbye, Arzamas. Glad I got out of this town and this nightmare."],["N","Девяностые кончились. А ты жив — это уже победа.","The nineties are over. And you're alive — that's already a win."]];
 function escapeScreen(){title(" ");txt("СВОБОДА",W/2,128,"#8f8","center",20);
  wrap(S.lang==="en"?"You got out of town. The nineties stay behind. Alive — the best ending.":"Ты выбрался из города. Девяностые остались позади. Живой — лучшая концовка.",24).forEach((l,i)=>txt(l,W/2,148+i*12,"#ddd","center"));
- btn("В МЕНЮ",30,210,120,22,()=>{state="menu"})}
+ btn("В МЕНЮ",(W-120)/2,210,120,22,()=>{state="menu"})}
 const DNT=[["Дубки",400,100],["Чехова",170,220],["Парк Гайдара",560,330],["Калинина",260,430],["Соборная площадь",610,540],["Колхозный рынок",330,590],["Центр",560,700],["Революции",250,640],["Музей Гайдара",330,720],["Коммунистов",440,840],["Автостанция",600,805],["АПЗ",720,730],["Девятого Мая",880,600],["Универмаг",800,200],["Храм",465,930],["Ивановка",500,1180],["Сосновый",720,1260],["Володарского",400,1130]].map(q=>[q[0],...TP(q[1],q[2])]);
 function distAt(x,y){let b=DNT[0],bd=1e9;for(const q of DNT){const d=Math.hypot(q[1]-x,q[2]-y);if(d<bd){bd=d;b=q}}return b[0]}
 const SAYS=[["Жизнь — боль.","Life is pain."],["Опять талоны...","Ration coupons again..."],["Ща «Поле чудес» начнётся!","Field of Miracles starts soon!"],["Доллар опять вырос.","Dollar's up again."],["Братан, закурить есть?","Bro, got a smoke?"],["Брат за брата!","Brother for brother!"],["Сникерс — не тормози!","Snickers — don't slow down!"],["Хорошо сидим...","We sit well..."]];
@@ -827,7 +839,7 @@ CS.bus=[["N","Автостанция. Рейсовые автобусы, тор�
 CS.home=[["N","Своя квартира. Ковёр на стене, сервант с хрусталём и телевизор «Рубин» в углу. Здесь тебя не достанут.","Home. A carpet on the wall, crystal in the sideboard and a Rubin TV in the corner. They won't reach you here."]];
 CS.mall=[["N","Универмаг. Вешалки с плащами, секция трикотажа и буфет на втором этаже. Тут и приоденешься, и перекусишь.","Department store. Glass doors, an escalator and the smell of imported gum. Buy clothes, grab a bite."]];
 CS.church=[["N","Храм. Воск, холодный камень и тишина. Свечи ставят у бокового аналоя.","The church. Wax, cold stone and quiet. Candles are set at the side stand."]];
-CS.police=[["N","Дежурная часть. Стойка, журнал посетителей и дверь в коридор КПЗ.","Police station. A duty desk, visitor log and the door to the holding cells."]];
+CS.police=[["N","Дежурная часть. Стойка, журнал посетителей и дверь в коридор КПЗ.","Police station. A duty desk, visitor log and the door to the holding cells."],["N","На стойке висит журнал изъятого: стволы, отобранные при задержании, лежат здесь же, в камере хранения.","The desk keeps a seized-property log: guns taken at arrest wait in the storage room."]];
 const ARS={},EXIT_DOOR={out:true},BUY_DOOR={buy:true};
 const homes=[["flat","Квартира Веры","#76604b"],["workshop","Дом переплётчика","#635749"],["room","Комната диспетчера","#656a5d"]];
 for(const [i,[k,l]] of homes.entries()){const p=sheet(...[[245,200],[173,141],[321,303]][i]);let house=null,best=Infinity;
@@ -878,7 +890,7 @@ function doorNear(){if(!P)return null;
  if(AREA){if(Math.hypot(P.x-AREA.ex,P.y-AREA.ey)<14)return EXIT_DOOR;if(GOODS[AREA.k]&&GOODS[AREA.k].length&&Math.hypot(P.x-AREA.bx,P.y-AREA.by)<18)return BUY_DOOR;return null}
 if(!AREA)for(const d of DOORS)if(Math.hypot(d.x-P.x,d.y-P.y)<14&&los(P.x,P.y,d.x,d.y))return d;return null}
 function enter(k){if(AREA||P.car||!GOODS[k])return;const a=ARS[k]||(ARS[k]=mkArea(k));CITY={WL,GR,WLC,BL,C,N,E,PK,PROPS,WW,WH,px:P.x,py:P.y};WL=a.wl;GR=a.gr;WLC=a.wc;BL=a.bl;C=[];N=a.n;E=[];PK=[];PROPS=[];WW=a.w;WH=a.h;AREA=a;AREA.hostile=k==="garage"&&mi===MS.length-1;
- if(AREA.hostile)E=[[78,236,118,236],[442,236,482,236]].map((p,j)=>({x:p[0],y:p[1],ax:p[0],ay:p[1],bx:p[2],by:p[3],a:0,hp:2,tg:true,st:0,cd:1+j*.2,sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0}));
+ if(AREA.hostile)E=[[78,236,118,236],[442,236,482,236],[120,80,170,80],[240,70,290,70],[360,80,410,80],[490,95,515,140],[60,150,100,150],[200,150,250,150],[330,150,380,150],[505,185,505,225],[95,300,150,300],[200,300,240,300],[360,300,410,300],[470,300,515,300],[405,235,445,235]].map((p,j)=>({x:p[0],y:p[1],ax:p[0],ay:p[1],bx:p[2],by:p[3],a:0,hp:2,tg:true,st:0,cd:1+j*.15,sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0}));
  P.x=a.sx;P.y=a.sy;P.a=-Math.PI/2;P.vx=P.vy=P.dash=P.down=0;clearTransient();resetInput();rebuildGrid();playerMoved();ZM=1;cam.sn=true;msg=AREA.hostile?"Внутри засада. Держись за укрытиями.":"Безопасная зона";msgT=3;snd(300,.1,"triangle",.05);if(!a.seen){a.seen=true;showCut(a.cs,null)}}
 function leave(){if(!CITY)return;const c=CITY;WL=c.WL;GR=c.GR;WLC=c.WLC;BL=c.BL;C=c.C;N=c.N;E=c.E;PK=c.PK;PROPS=c.PROPS;WW=c.WW;WH=c.WH;AREA=null;CITY=null;rebuildGrid();const p=fr(c.px,c.py);P.x=p[0];P.y=p[1];P.vx=P.vy=P.dash=0;P.inv=.8;clearTransient();resetInput();playerMoved();cam.sn=true}
 function garageCar(){if(!CITY)return null;let best=null,distance=85;for(const c of CITY.C){const d=Math.hypot(c.x-CITY.px,c.y-CITY.py);if(!c.ai&&!c.mc&&Math.abs(c.v)<1&&d<distance){best=c;distance=d}}return best}
@@ -890,10 +902,11 @@ function purchase(it){if(!AREA||!it)return;msgT=3;
  if(it[2]==="policeExit"){leave();state="play";return}
  if(it[2]==="policeInfo"){showCut([["N",want?"Дежурный проверил журнал: на тебя есть ориентировка. Патруль ищет по приметам.":"Дежурный пролистал журнал: ориентировки на тебя нет."],["L",want?"Надо быть осторожнее.":"Пока можно не оглядываться."]],null);return}
  if(it[2]==="policeSurrender"){if(!want){msg="Ориентировки нет. Ты свободен.";return}leave();state="play";arrestJail(150);return}
+ if(it[2]==="retrieve"){const k=it[3],fee=seizedFee(k);if(!(S.seized||[]).includes(k)){msg="В камере хранения такого ствола нет";return}if(S.rub<fee){msg="Не хватает рублей на выкуп";return}S.rub-=fee;S.seized=S.seized.filter(v=>v!==k);if(!hasW(k))S.wp.push(k);P.w=k;save();msg="Ствол вернули: "+WP[k].n+". Патроны при хранении не выдают — бери на рынке.";msgT=5;return}
  if(it[2]==="save"){save();msg="Игра сохранена";return}
  if(it[2]==="dress"){back="buy";state="shop";resetInput();return}
  if(it[2]==="sell"){if(P.am[0]>=10){P.am[0]-=10;S.rub+=35;save();msg="Толкнул патроны: +35 ₽"}else{msg="Нечего толкать — нет 10 патронов 9 мм"};return}
- if(it[2]==="sellwp"){const k=it[3],pr=it[4]|0;if(hasW(k)&&k!==0){S.wp=S.wp.filter(v=>v!==k);if(P.w===k)P.w=0;S.rub+=pr;save();msg="Толкнул ствол: +"+pr+" ₽"}else msg="Толкать нечего — такого ствола нет";return}
+ if(it[2]==="sellwp"){const k=it[3],pr=it[4]|0;if(hasW(k)&&k!==0&&k!==6){S.wp=S.wp.filter(v=>v!==k);if(P.w===k)P.w=0;S.rub+=pr;save();msg="Толкнул ствол: +"+pr+" ₽"}else msg="Толкать нечего — такого ствола нет";return}
  if(it[2]==="sleep"){const morning=450;const crossed=clock>=morning;clock=morning;if(crossed&&S.debt>0)S.debt=Math.min(1e9,Math.round(S.debt*1.15));P.hp=100;P.sta=100;P.down=0;P.impact=0;want=0;wantT=0;save();msg="Новый день. Ты выспался.";return}
  if(it[2]==="wp"&&hasW(it[3])){msg="Уже есть";return}
  const workshop=["repair","park","kit"].includes(it[2]),car=workshop?garageCar():null;
@@ -913,11 +926,11 @@ function purchase(it){if(!AREA||!it)return;msgT=3;
  else{if(it[2]==="wp"){S.wp.push(it[3]);P.w=it[3]}P.am[it[3]]+=it[4]}save();msg=it[2]==="park"?"Автомобиль сохранён":"Готово"}
 let buyPage=0;
 function buyScreen(){title("");txt(AREA.t,W/2,96,"#e8c060","center",8);txt("₽ "+S.rub,W/2,108,"#fff","center");
- const items=GOODS[AREA.k],pages=Math.max(1,Math.ceil(items.length/5));buyPage=Math.min(buyPage,pages-1);
- for(let i=0;i<5;i++){const it=items[buyPage*5+i];if(it)btn(it[0]+(it[2]==="service"?" · "+WP[P.w].n:"")+(it[1]?" — "+it[1]+" ₽":""),8,118+i*25,164,21,()=>purchase(it))}
- if(pages>1){btn("◀",8,246,35,18,()=>buyPage=(buyPage+pages-1)%pages);txt((buyPage+1)+" / "+pages,W/2,258,"#c8bd9f","center",7);btn("▶",143,246,35,18,()=>buyPage=(buyPage+1)%pages)}
- if(msgT>0)txt(msg,W/2,272,"#8f8","center",6);btn("НАЗАД",30,282,120,22,()=>{state="play"})}
-const EN={"Открытый мир: катайся по Арзамасу":"Open world: cruise Arzamas","Открытый мир":"Open world","глава":"chapter","ПРОДОЛЖИТЬ":"CONTINUE","НОВАЯ ИГРА":"NEW GAME","МАГАЗИН СТИЛЕЙ":"STYLE SHOP","магазин стилей":"style shop","НАСТРОЙКИ":"SETTINGS","Язык:":"Language:","Музыка: вкл":"Music: on","Музыка: выкл":"Music: off","НАЗАД":"BACK","КУПЛЕНО":"OWNED","НАДЕТО":"WORN","НАДЕТЬ":"WEAR","КУПИТЬ":"BUY","Не хватает рублей":"Not enough rubles","Куплено!":"Bought!","ПАУЗА":"PAUSE","В МЕНЮ":"MENU","ТЫ ПОГИБ":"YOU DIED","больничка: −100 ₽":"hospital: −100 ₽","Больничка: −":"Hospital: −","ЕЩЁ РАЗ":"RETRY","тап / пробел ▶":"tap / space ▶","ХП":"HP","ОГОНЬ":"FIRE","БИТА":"BAT","ВХОД":"ENTER","ВЫХОД":"EXIT","ОРУЖ":"WPN","+10 патронов":"+ammo","КОНЕЦ":"THE END","км/ч":"km/h","Обрез":"Sawed-off","ПМ":"Makarov","Тельняшка с цепью":"Striped shirt & chain","Спортивка «Адидас»":"Adidas tracksuit","Малиновый пиджак":"Crimson blazer","Кожанка":"Leather jacket","Рассказчик":"Narrator","Лёха":"Lyokha","Михалыч":"Mikhalych","Кабан":"Boar","Гера":"Gera","Дубки":"Dubki","Чехова":"Chekhov St.","Парк Гайдара":"Gaidar Park","Калинина":"Kalinina St.","Колхозный рынок":"Collective Farm Market","Соборная площадь":"Cathedral Square","Пландина":"Plandin St.","Революции":"Revolution St.","Коммунистов":"Kommunistov St.","Центр":"Downtown","АПЗ":"APZ Industrial","Ивановка":"Ivanovka","Володарского":"Volodarsky St.","Автостанция":"Bus Station","Девятого Мая":"9 May St.","Аптечка":"Medkit","Патроны ПМ/АК":"Ammo PM/AK","Пирожок":"Pirozhok pie","Рюмка водки":"Shot of vodka","Обед":"Lunch","Магазин «Продукты»":"Grocery Store","Ресторан гостиницы «Арзамас»":"Hotel Arzamas Restaurant","ПРОДУКТЫ":"GROCERY","КОЛХОЗНЫЙ РЫНОК":"MARKET","ГОСТИНИЦА АРЗАМАС":"HOTEL ARZAMAS","Нет 5 ₽ на проезд":"Need 5 ₽ for fare","Проезд 5 ₽":"Fare 5 ₽","ГАЗ▲":"GAS▲","ТОРМОЗ":"BRAKE","Патроны 9 мм x16":"9 mm ammo x16","Патроны обрез x8":"Shells x8","Патроны АК x30":"AK ammo x30","Уже есть":"Already owned","Оружейный магазин":"Gun Shop","ОРУЖЕЙНЫЙ":"GUN SHOP","ЖД ВОКЗАЛ":"TRAIN STATION","Кредит +500 ₽":"Loan +500 ₽","Вернуть долг":"Repay debt","Ограбил прохожего":"Mugged a passerby","Нет патронов — купи в магазине":"Out of ammo — buy more","Снёс препятствие!":"Smashed through!","РЫВОК":"DASH","Билет — 120 ₽":"Ticket — 120 ₽","Арзамас — Москва, плацкарт":"Arzamas — Moscow, 3rd class","СВОБОДА":"FREEDOM","Универмаг":"Department store","Музей Гайдара":"Gaidar Museum","Храм":"Church","Сосновый":"Sosnovy"};
+ const items=AREA.k==="police"?GOODS.police.concat(seizedItems()):GOODS[AREA.k],pages=Math.max(1,Math.ceil(items.length/5));buyPage=Math.min(buyPage,pages-1);
+ for(let i=0;i<5;i++){const it=items[buyPage*5+i];if(it)btn(it[0]+(it[2]==="service"?" · "+WP[P.w].n:"")+(it[1]?" — "+it[1]+" ₽":""),8,118+i*25,W-16,21,()=>purchase(it))}
+ if(pages>1){btn("◀",8,246,35,18,()=>buyPage=(buyPage+pages-1)%pages);txt((buyPage+1)+" / "+pages,W/2,258,"#c8bd9f","center",7);btn("▶",W-37,246,35,18,()=>buyPage=(buyPage+1)%pages)}
+ if(msgT>0)txt(msg,W/2,272,"#8f8","center",6);btn("НАЗАД",(W-120)/2,282,120,22,()=>{state="play"})}
+const EN={"Открытый мир: катайся по Арзамасу":"Open world: cruise Arzamas","Открытый мир":"Open world","глава":"chapter","ПРОДОЛЖИТЬ":"CONTINUE","НОВАЯ ИГРА":"NEW GAME","МАГАЗИН СТИЛЕЙ":"STYLE SHOP","магазин стилей":"style shop","НАСТРОЙКИ":"SETTINGS","Язык:":"Language:","Музыка: вкл":"Music: on","Музыка: выкл":"Music: off","НАЗАД":"BACK","КУПЛЕНО":"OWNED","НАДЕТО":"WORN","НАДЕТЬ":"WEAR","КУПИТЬ":"BUY","Не хватает рублей":"Not enough rubles","Куплено!":"Bought!","ПАУЗА":"PAUSE","В МЕНЮ":"MENU","ТЫ ПОГИБ":"YOU DIED","больничка: −100 ₽":"hospital: −100 ₽","Больничка: −":"Hospital: −","ЕЩЁ РАЗ":"RETRY","тап / пробел ▶":"tap / space ▶","ХП":"HP","ОГОНЬ":"FIRE","БИТА":"BAT","ВХОД":"ENTER","ВЫХОД":"EXIT","ОРУЖ":"WPN","+10 патронов":"+ammo","КОНЕЦ":"THE END","км/ч":"km/h","Обрез":"Sawed-off","ПМ":"Makarov","Кулаки":"Fists","Тельняшка с цепью":"Striped shirt & chain","Спортивка «Адидас»":"Adidas tracksuit","Малиновый пиджак":"Crimson blazer","Кожанка":"Leather jacket","Рассказчик":"Narrator","Лёха":"Lyokha","Михалыч":"Mikhalych","Кабан":"Boar","Гера":"Gera","Дубки":"Dubki","Чехова":"Chekhov St.","Парк Гайдара":"Gaidar Park","Калинина":"Kalinina St.","Колхозный рынок":"Collective Farm Market","Соборная площадь":"Cathedral Square","Пландина":"Plandin St.","Революции":"Revolution St.","Коммунистов":"Kommunistov St.","Центр":"Downtown","АПЗ":"APZ Industrial","Ивановка":"Ivanovka","Володарского":"Volodarsky St.","Автостанция":"Bus Station","Девятого Мая":"9 May St.","Аптечка":"Medkit","Патроны ПМ/АК":"Ammo PM/AK","Пирожок":"Pirozhok pie","Рюмка водки":"Shot of vodka","Обед":"Lunch","Магазин «Продукты»":"Grocery Store","Ресторан гостиницы «Арзамас»":"Hotel Arzamas Restaurant","ПРОДУКТЫ":"GROCERY","КОЛХОЗНЫЙ РЫНОК":"MARKET","ГОСТИНИЦА АРЗАМАС":"HOTEL ARZAMAS","Нет 5 ₽ на проезд":"Need 5 ₽ for fare","Проезд 5 ₽":"Fare 5 ₽","ГАЗ▲":"GAS▲","ТОРМОЗ":"BRAKE","Патроны 9 мм x16":"9 mm ammo x16","Патроны обрез x8":"Shells x8","Патроны АК x30":"AK ammo x30","Уже есть":"Already owned","Оружейный магазин":"Gun Shop","ОРУЖЕЙНЫЙ":"GUN SHOP","ЖД ВОКЗАЛ":"TRAIN STATION","Кредит +500 ₽":"Loan +500 ₽","Вернуть долг":"Repay debt","Ограбил прохожего":"Mugged a passerby","Нет патронов — купи в магазине":"Out of ammo — buy more","Снёс препятствие!":"Smashed through!","РЫВОК":"DASH","Билет — 120 ₽":"Ticket — 120 ₽","Арзамас — Москва, плацкарт":"Arzamas — Moscow, 3rd class","СВОБОДА":"FREEDOM","Универмаг":"Department store","Музей Гайдара":"Gaidar Museum","Храм":"Church","Сосновый":"Sosnovy"};
 const TC=new Map();
 EN["ДЕЙСТВИЕ"]="ACTION";EN["Действие"]="Action";EN["КАРТА ГОРОДА"]="CITY MAP";EN["БЕЗОПАСНАЯ ЗОНА"]="SAFE ZONE";
 EN["Сбит машиной"]="Hit by a car";EN["Двигатель троит — тянет еле-еле."]="Engine is misfiring — barely pulls.";EN["Двигатель заглох. Дальше своим ходом."]="Engine died. You're on foot now.";
@@ -925,12 +938,29 @@ EN["КВАРТИРА"]="HOME";EN["Квартира"]="Apartment";EN["Сохра�
 function tr(s){s=String(s);if(S.lang!=="en")return s;let r=TC.get(s);if(r!==undefined)return r;r=s;for(const k in EN)if(r.includes(k))r=r.split(k).join(EN[k]);if(TC.size>800)TC.clear();TC.set(s,r);return r}
 const WP=[{n:"ПМ",cd:.25,sp:.06,pel:1,v:240,f:140,r:170},{n:"Обрез",cd:.8,sp:.3,pel:6,v:190,f:80,r:200,life:.3},{n:"АК-74",cd:.11,sp:.1,pel:1,v:290,f:120,r:230}];
 WP.push({n:"ТТ",cd:.31,sp:.048,pel:1,v:260,f:155,r:180},{n:"Наган",cd:.53,sp:.04,pel:1,v:210,f:132,r:140},{n:"ИЖ-27",cd:.91,sp:.18,pel:5,v:208,f:87,r:210,life:.48});
+WP.push({n:"Кулаки",cd:.32,sp:0,pel:0,v:0,f:0,r:0,melee:true,dmg:.6,range:15});
+const WPRICE=[0,600,2200,740,550,800,0];
 function wmax(){return(S.wp||[0]).length}
+/* Изъятые в КПЗ стволы лежат в камере хранения отдела: выкуп — 40% розничной цены. */
+function seizedFee(i){return Math.max(50,Math.round((WPRICE[i]||600)*.4))}
+function seizedList(){return[...new Set((S.seized||[]).filter(i=>!hasW(i)))]}
+function seizedItems(){return seizedList().map(i=>["Забрать «"+WP[i].n+"» из КПЗ",seizedFee(i),"retrieve",i,0])}
+function seizedFeeAll(list){return list.reduce((a,i)=>a+seizedFee(i),0)}
+function seizeBuyback(list){const need=seizedFeeAll(list);if(S.rub<need)return false;S.rub-=need;S.seized=(S.seized||[]).filter(i=>!list.includes(i));for(const i of list)if(!hasW(i))S.wp.push(i);save();return true}
 function swW(){let k=P.w;for(let i=0;i<WP.length;i++){k=(k+1)%WP.length;if(hasW(k)){P.w=k;break}}msg=WP[P.w].n;msgT=1;snd(400,.05,"square",.04)}
 const NC=["#8a3030","#306a8a","#6a6a30","#7a4a8a","#3a7a5a","#a07040"];
-function genN(){sd=123;const a=[];for(let i=0,t=0;i<40&&t<160;t++){const r=RD[sr()*RD.length|0],q=roadPt(r,30+sr()*(r.len-60)),side=sr()<.5?-1:1,off=r.w/2+8,x=q.x-q.ty*side*off,y=q.y+q.tx*side*off,c=pick(NC);if(!col(x,y,3)){i++;a.push({x,y,ta:Math.atan2(q.ty,q.tx),dir:sr()<.5?1:-1,a:0,sw:0,t:sr()*3,pn:0,dead:false,say:pick(SAYS),k:{top:c,arm:c,pants:"#2a2a30",hair:pick(["#222","#6a4a2a","#aaa"])}})}}return a}
-/* Пешеход не сходит с тротуара: шаг отменяется, если уводит на проезжую часть. */
-function stepN(n,dx,dy){if(roadDist(n.x+dx,n.y+dy)<4)return false;mv(n,dx,dy);return true}
+function genN(){sd=123;const a=[];for(let i=0,t=0;i<40&&t<200;t++){const ri=sr()*RD.length|0,r=RD[ri],q=roadPt(r,30+sr()*(r.len-60)),side=sr()<.5?-1:1,off=r.w/2+9+sr()*6,x=q.x-q.ty*side*off,y=q.y+q.tx*side*off,c=pick(NC);if(col(x,y,3)||roadDist(x,y)<6)continue;i++;a.push({x,y,rp:ri,ta:Math.atan2(q.ty,q.tx),dir:sr()<.5?1:-1,a:0,sw:0,t:sr()*3,pn:0,dead:false,say:pick(SAYS),k:{top:c,arm:c,pants:"#2a2a30",hair:pick(["#222","#6a4a2a","#aaa"])}})}return a}
+/* Пешеход не выходит на проезжую часть НИ ОДНОЙ дороги. Шаг запрещён, если ведёт ближе 5 px к любой полосе (roadDist — глобальное расстояние до ближайшей полосы). Если пешеход уже на полосе (его сбила/сдвинула машина), разрешён только шаг прочь — иначе он застрял бы у невидимой границы и не смог бы сойти на тротуар. */
+const PED_BAND=5;
+function stepN(n,dx,dy){const cur=roadDist(n.x,n.y),nxt=roadDist(n.x+dx,n.y+dy);
+ if(cur>=PED_BAND){if(nxt>=PED_BAND){mv(n,dx,dy);return true}return false}
+ if(nxt>cur){mv(n,dx,dy);return true}return false}
+/* Ориентация пешехода берётся от своей дороги: он идёт вдоль улицы, а не в невидимую границу полосы. */
+const PEDQ={x:0,y:0,tx:0,ty:0,rp:0};
+function pedNearest(x,y){let bd=1e9,bi=0,ba=0;for(let i=0;i<RD.length;i++){const r=RD[i],st=Math.max(8,Math.round(r.len/24));for(let s=0;s<=r.len;s+=st){const q=roadPt(r,s),dx=q.x-x,dy=q.y-y,d=dx*dx+dy*dy;if(d<bd){bd=d;bi=i;ba=s}}}const out=roadPt(RD[bi],ba,PEDQ);out.rp=bi;return out}
+function pedTa(n){const q=pedNearest(n.x,n.y);n.rp=q.rp;n.ta=Math.atan2(q.ty,q.tx)}
+/* Долгое застревание: ставим пешехода на свободный тротуар своей дороги (не ближе порога к любой полосе) и заново задаём направление. */
+function pedRescue(n){const q=pedNearest(n.x,n.y);n.rp=q.rp;const r=RD[q.rp],side=(n.y-q.y)*q.tx-(n.x-q.x)*q.ty>=0?1:-1;for(const off of[9,10,8,11,13,7,14]){const x=q.x-q.ty*side*off,y=q.y+q.tx*side*off;if(polyDist(r.pts,x,y)>=r.w/2+6&&roadDist(x,y)>=6&&!col(x,y,3)){n.x=x;n.y=y;break}}n.ta=Math.atan2(q.ty,q.tx);n.a=n.ta+(n.dir>0?0:3.1416);n.stuck=0;n.t=0}
 function updN(dt){for(const n of N){if(n.dead)continue;if(n.fixed){if(Math.hypot(n.x-P.x,n.y-P.y)<64)n.a=Math.atan2(P.y-n.y,P.x-n.x);continue}
  if(n.calm){n.pn=0;if(Math.hypot(n.x-P.x,n.y-P.y)<64)n.a=Math.atan2(P.y-n.y,P.x-n.x);
   n.wt-=dt;if(n.wt<=0){n.wt=2+rnd(3);n.wx=n.homeX+rnd(44)-22;n.wy=n.homeY+rnd(44)-22;for(let k=0;k<4&&col(n.wx,n.wy,4);k++){n.wx=n.homeX+rnd(44)-22;n.wy=n.homeY+rnd(44)-22}if(col(n.wx,n.wy,4)){n.wx=n.homeX;n.wy=n.homeY}n.idle=Math.random()<.35?1+rnd(2):0}
@@ -940,13 +970,12 @@ function updN(dt){for(const n of N){if(n.dead)continue;if(n.fixed){if(Math.hypot
   continue}
  n.impact=Math.max(0,(n.impact||0)-dt);if(n.down>0){n.down-=dt;mv(n,n.vx*dt,n.vy*dt,true);n.vx*=Math.exp(-5*dt);n.vy*=Math.exp(-5*dt);continue}n.pn-=dt;if(n.st&&n.pn<=0)continue;
  if(n.pn>0)n.a=Math.atan2(n.y-P.y,n.x-P.x);
- else{n.t-=dt;if(n.t<=0){n.t=2+rnd(4);n.idle=Math.random()<.25?1+rnd(2):0;if(Math.random()<.3)n.dir*=-1}
+ else{n.t-=dt;if(n.t<=0){pedTa(n);n.t=2+rnd(4);n.idle=Math.random()<.25?1+rnd(2):0;if(Math.random()<.3)n.dir*=-1}
   if(n.idle>0){n.idle-=dt;continue}n.a=n.ta+(n.dir>0?0:3.1416)}
  const sp=n.pn>0?52:15,ox=n.x,oy=n.y,mx=Math.cos(n.a)*sp*dt,my=Math.sin(n.a)*sp*dt;
- if(stepN(n,mx,my))n.sw+=dt*sp/3;
- else if(stepN(n,-my,mx)||stepN(n,my,-mx))n.sw+=dt*sp/3;
- else{n.dir*=-1;n.a+=1.6;continue}
- if(Math.abs(n.x-ox)+Math.abs(n.y-oy)<.001){n.dir*=-1;if(n.pn>0)n.a+=1.6}}}
+ if(stepN(n,mx,my)||stepN(n,-my,mx)||stepN(n,my,-mx)){n.sw+=dt*sp/3;if(Math.abs(n.x-ox)+Math.abs(n.y-oy)>.02){n.stuck=0;continue}}
+ /* Сдвиг не удался (упёрся в бордюр, препятствие или край дороги): заново ориентируемся по улице, при долгом застревании сходим на свободный тротуар. */
+ n.stuck=(n.stuck||0)+1;if(n.stuck>15)pedRescue(n);else{pedTa(n);n.dir*=-1;if(n.pn>0)n.a=Math.atan2(n.y-P.y,n.x-P.x)}}}
 function killN(n){if(safeZone()||n.dead||n.god)return;n.dead=true;const gn=3+(rnd(25)|0);S.rub+=gn;ft(n.x,n.y,"+"+gn+" ₽","#e8c060");SHK=Math.max(SHK,.2);splat(n.x,n.y,16,true);corpse(n.x,n.y,rnd(6.28),n.k);snd(90,.15,"sawtooth",.06);noise(n.x,n.y,120);raiseWant(1)}
 /* Труп лежит 5 секунд и растворяется — не остаётся на карте навсегда. */
 function corpse(x,y,a,k){if(AREA)return;CORPSES.push({x,y,a,k,t:5,expires:performance.now()+5000})}
@@ -978,17 +1007,16 @@ function menuBg2(){const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,"#
  g.fillStyle="rgba(10,16,12,.14)";for(let y=0;y<H;y+=3)g.fillRect(0,y,W,1)
 }
 function menuScreen2(){title("Нижегородская область");
- txt(chName(Math.min(S.mission,MS.length-1)),18,97,"#b9bbaa",0,7);
- btn("ПРОДОЛЖИТЬ",18,106,144,20,()=>{if(P&&P.hp>0){state="play";resetInput()}else startGame(true)},!had&&!P);
- btn("НОВАЯ ИГРА",18,131,144,20,()=>{state="difficulty";resetInput()});
- btn("КАРТА ГОРОДА",18,156,144,20,()=>openMap("menu"));
- btn("НАСТРОЙКИ",18,181,144,20,()=>openSettings("menu"));
+ txt(chName(Math.min(S.mission,MS.length-1)),(W-144)/2,97,"#b9bbaa",0,7);
+ btn("ПРОДОЛЖИТЬ",(W-144)/2,106,144,20,()=>{if(S.mission>=MS.length)startGame(true);else if(P&&P.hp>0){state="play";resetInput()}else startGame(true)},!had&&!P);
+ btn("НОВАЯ ИГРА",(W-144)/2,131,144,20,()=>{state="difficulty";resetInput()});
+ btn("КАРТА ГОРОДА",(W-144)/2,156,144,20,()=>openMap("menu"));
+ btn("НАСТРОЙКИ",(W-144)/2,181,144,20,()=>openSettings("menu"));
  txt("BY KOLOSOV MADE AI",W/2,H-21,"#c8b383","center",7)}
 function settingsScreen(){title("НАСТРОЙКИ")}
 const modes=[["Сюжет",.65,20],["Улица",1,12],["Без пощады",1.55,7]];
-function difficultyScreen(){title("СЛОЖНОСТЬ");modes.forEach(([name,damage,ammo],i)=>{const y=101+i*41;btn(name,18,y,144,22,()=>{S={mission:0,rub:0,owned:["jacket"],skin:"jacket",lang:S.lang,debt:0,wp:[0],karma:0,tags:{},pad:S.pad,level:i};save();startGame(true)});txt("Урон ×"+damage+"   Патронов: "+ammo,90,y+32,"#d2c6a7","center",6)});btn("НАЗАД",18,235,144,20,()=>state="menu")}
-const mapView={x:600,y:600,z:1,target:1,back:"pause",focusX:90,focusY:142},mapTouches=new Map();
-const STREET_NAMES=RD.map(r=>r.name);
+function difficultyScreen(){title("СЛОЖНОСТЬ");modes.forEach(([name,damage,ammo],i)=>{const y=101+i*41;btn(name,(W-144)/2,y,144,22,()=>{S={mission:0,rub:0,owned:["jacket"],skin:"jacket",lang:S.lang,debt:0,wp:[0,6],karma:0,tags:{},pad:S.pad,level:i};save();startGame(true)});txt("Урон ×"+damage+"   Патронов: "+ammo,W/2,y+32,"#d2c6a7","center",6)});btn("НАЗАД",(W-144)/2,235,144,20,()=>state="menu")}
+const mapView={x:600,y:600,z:1,target:1,back:"pause",focusX:W/2,focusY:142},mapTouches=new Map();const STREET_NAMES=RD.map(r=>r.name);
 const cityMap={WW,WH,GR,WLC},reducedMotion=matchMedia("(prefers-reduced-motion: reduce)");
 const WEATHER={rain:0,remaining:0,next:80+rnd(100),drops:Array.from({length:44},()=>({x:rnd(W),y:rnd(H),len:5+rnd(7),speed:150+rnd(100)}))};
 function updateWeather(dt){
@@ -1000,10 +1028,10 @@ function updateWeather(dt){
 function mapWorld(){return CITY||cityMap}
 function openMap(from){mapView.back=from;state="map";resetInput();mapTouches.clear();const city=mapWorld();mapView.x=P?marker.x:city.WW/2;mapView.y=P?marker.y:city.WH/2;mapView.z=mapView.target=1;clampMap()}
 function closeMap(){state=mapView.back;mapTouches.clear();resetInput()}
-function mapScale(){const c=mapWorld();return Math.min(164/c.WW,224/c.WH)*mapView.z}
-function clampMap(){const c=mapWorld(),s=mapScale(),hx=82/s,hy=112/s;mapView.x=c.WW<=hx*2?c.WW/2:Math.max(hx,Math.min(c.WW-hx,mapView.x));mapView.y=c.WH<=hy*2?c.WH/2:Math.max(hy,Math.min(c.WH-hy,mapView.y))}
-function zoomMap(f,x=90,y=142){mapView.target=Math.max(1,Math.min(8,mapView.target*f));mapView.focusX=x;mapView.focusY=y}
-function animateMap(dt){if(state!=="map")return;const old=mapScale(),k=reducedMotion.matches?1:1-Math.exp(-14*dt);mapView.z+=(mapView.target-mapView.z)*k;const next=mapScale();mapView.x+=(mapView.focusX-90)*(1/old-1/next);mapView.y+=(mapView.focusY-142)*(1/old-1/next);clampMap()}
+function mapScale(){const c=mapWorld();return Math.min((W-16)/c.WW,224/c.WH)*mapView.z}
+function clampMap(){const c=mapWorld(),s=mapScale(),hx=(W-16)/2/s,hy=112/s;mapView.x=c.WW<=hx*2?c.WW/2:Math.max(hx,Math.min(c.WW-hx,mapView.x));mapView.y=c.WH<=hy*2?c.WH/2:Math.max(hy,Math.min(c.WH-hy,mapView.y))}
+function zoomMap(f,x=W/2,y=142){mapView.target=Math.max(1,Math.min(8,mapView.target*f));mapView.focusX=x;mapView.focusY=y}
+function animateMap(dt){if(state!=="map")return;const old=mapScale(),k=reducedMotion.matches?1:1-Math.exp(-14*dt);mapView.z+=(mapView.target-mapView.z)*k;const next=mapScale();mapView.x+=(mapView.focusX-W/2)*(1/old-1/next);mapView.y+=(mapView.focusY-142)*(1/old-1/next);clampMap()}
 function mapPointerDown(id,p){if(mapTouches.size<2)mapTouches.set(id,p)}
 function mapPointerMove(id,p){const prev=mapTouches.get(id);if(!prev)return;
  if(mapTouches.size===1){const s=mapScale();mapView.x-=(p.x-prev.x)/s;mapView.y-=(p.y-prev.y)/s;clampMap()}
@@ -1030,23 +1058,23 @@ function mapIcon(kind,x,y){
  g.restore();
 }
 function drawMap(){
- const c=mapWorld(),s=mapScale(),ox=90-mapView.x*s,oy=142-mapView.y*s;g.fillStyle="#151c18";g.fillRect(0,0,W,H);txt("АРЗАМАС / КАРТА",9,15,"#dbcdac",0,10);txt("Схема, не геодезическая копия",9,25,"#b5b4a4",0,6);txt("обзор "+mapView.z.toFixed(1)+"x",172,25,"#b5b4a4","right",6);
- g.save();g.beginPath();g.rect(8,30,164,224);g.clip();g.fillStyle="#303b2f";g.fillRect(8,30,164,224);g.imageSmoothingEnabled=true;g.drawImage(c.GR,ox,oy,c.WW*s,c.WH*s);g.drawImage(c.WLC,ox,oy,c.WW*s,c.WH*s);g.imageSmoothingEnabled=false;
+ const c=mapWorld(),s=mapScale(),ox=W/2-mapView.x*s,oy=142-mapView.y*s;g.fillStyle="#151c18";g.fillRect(0,0,W,H);txt("АРЗАМАС / КАРТА",9,15,"#dbcdac",0,10);txt("Схема, не геодезическая копия",9,25,"#b5b4a4",0,6);txt("обзор "+mapView.z.toFixed(1)+"x",W-8,25,"#b5b4a4","right",6);
+ g.save();g.beginPath();g.rect(8,30,W-16,224);g.clip();g.fillStyle="#303b2f";g.fillRect(8,30,W-16,224);g.imageSmoothingEnabled=true;g.drawImage(c.GR,ox,oy,c.WW*s,c.WH*s);g.drawImage(c.WLC,ox,oy,c.WW*s,c.WH*s);g.imageSmoothingEnabled=false;
  for(let i=0;i<RD.length;i++){if(i>=STREET_NAMES.length||(mapView.z<1.8&&i>3))continue;const r=RD[i],q=roadPt(r,r.len*.5),x=ox+q.x*s,y=oy+q.y*s;g.save();g.translate(x,y);let a=Math.atan2(q.ty,q.tx);if(a>Math.PI/2)a-=Math.PI;if(a<-Math.PI/2)a+=Math.PI;g.rotate(a);txt(STREET_NAMES[i],0,-3,"#f5ebd5","center",6);g.restore()}
- if(mapView.z>2.8)for(const b of (CITY?CITY.WL:WL)){if(!b.l||b.doorX!==undefined)continue;const x=ox+(b.x+b.w/2)*s,y=oy+(b.y+b.h/2)*s;if(x>8&&x<172&&y>30&&y<254)txt(b.l,x,y,"#f2e3c4","center",5)}
+ if(mapView.z>2.8)for(const b of (CITY?CITY.WL:WL)){if(!b.l||b.doorX!==undefined)continue;const x=ox+(b.x+b.w/2)*s,y=oy+(b.y+b.h/2)*s;if(x>8&&x<W-8&&y>30&&y<254)txt(b.l,x,y,"#f2e3c4","center",5)}
  for(const d of DOORS){mapIcon(MAP_ICON[d.k]||"home",ox+d.x*s,oy+d.y*s);if(mapView.z>2.2)txt(d.l,ox+d.x*s,oy+d.y*s-6,"#f0d7a1","center",5)}
  if(mapView.z>1.1)for(const d of DISTRICTS){const p=TP(d.x,d.y),x=ox+p[0]*s,y=oy+p[1]*s;g.fillStyle="rgba(10,13,11,.78)";g.fillRect(x-31,y-5,62,10);txt(d.n,x,y+2,"#d7c9a5","center",5)}
  for(const [id,c] of crews.entries()){const p=c.contact||c.p,x=ox+p[0]*s,y=oy+p[1]*s;g.strokeStyle=c.color;g.fillStyle=c.color;g.beginPath();g.arc(x,y,190*s,0,2*Math.PI);g.stroke();g.fillRect(x-2,y-2,4,4);if(mapView.z>1.3||crews[S.errand]?.to===id)txt(c.name,x,y-5,c.color,"center",6)}
  if(P){const x=ox+marker.x*s,y=oy+marker.y*s;g.fillStyle="#f3e8b0";g.beginPath();g.arc(x,y,3,0,Math.PI*2);g.fill();g.strokeStyle="#222";g.lineWidth=1;g.stroke()}
  if(mapView.z>1.4)for(const al of busStops){const q=roadPt(busRoad,al);mapIcon("bus",ox+q.x*s,oy+q.y*s)}
  if(P&&!AREA){const t=target();if(t){g.strokeStyle="#bf6248";g.lineWidth=1.5;g.strokeRect(ox+t.x*s-4,oy+t.y*s-4,8,8)}}
- g.restore();txt("С",165,42,"#fff","center",7);
+ g.restore();txt("С",W-15,42,"#fff","center",7);
  btn("−",8,256,26,18,()=>zoomMap(1/1.4));btn("+",38,256,26,18,()=>zoomMap(1.4));
- btn("К ГЕРОЮ",8,283,76,22,()=>{if(P){mapView.x=marker.x;mapView.y=marker.y;clampMap()}},!P);btn("НАЗАД",94,283,78,22,closeMap);
+ btn("К ГЕРОЮ",8,283,76,22,()=>{if(P){mapView.x=marker.x;mapView.y=marker.y;clampMap()}},!P);btn("НАЗАД",W-86,283,78,22,closeMap);
 }
 function endScreen(){title(" ");
  const good=S.tags?.final===0&&(S.karma||0)>=0;
- if(good&&S.tags?.press===0&&S.tags?.names===0){txt("ИМЕНА",90,109,"#c8b383","center",18);wrap("Тираж разобрали до открытия киосков. В списке должников больше не было номеров: напротив каждой суммы стояло имя. Вера забрала деньги последней. Лёху звали на общую фотографию, но он остался по другую сторону объектива.",34).forEach((l,i)=>txt(l,90,132+i*11,"#ddd","center"));btn("В МЕНЮ",30,278,120,22,()=>state="menu");return}
+ if(good&&S.tags?.press===0&&S.tags?.names===0){txt("ИМЕНА",W/2,109,"#c8b383","center",18);wrap("Тираж разобрали до открытия киосков. В списке должников больше не было номеров: напротив каждой суммы стояло имя. Вера забрала деньги последней. Лёху звали на общую фотографию, но он остался по другую сторону объектива.",34).forEach((l,i)=>txt(l,W/2,132+i*11,"#ddd","center"));btn("В МЕНЮ",(W-120)/2,278,120,22,()=>state="menu");return}
  txt(S.lang==="en"?(good?"FREEDOM":"THE FALL"):(good?"СВОБОДА":"ПАДЕНИЕ"),W/2,110,good?"#8f8":"#d05050","center",19);
  const body=good
   ?(S.lang==="en"?"Lyokha left the stash to the families the gang had ruined, turned himself in for the garage shootout and got eight years. He came out grey. Arzamas remembers his name as a warning, not a threat. He is alive — and that is a win."
@@ -1055,16 +1083,16 @@ function endScreen(){title(" ");
                  :"Лёха забрал общак и стал новым Михалычем. Он скупил район, ментов и молчание. Он выиграл всё и потерял себя. Для него девяностые не кончились — просто сменили имя.");
  wrap(body,34).slice(0,13).forEach((l,i)=>txt(l,W/2,130+i*10,"#ddd","center"));
  txt(S.lang==="en"?"Alexei Shesterenkin. Arzamas, 1999.":"Алексей Шестерёнкин. Арзамас, 1999.",W/2,262,"#8a8f80","center",7);
- btn("В МЕНЮ",30,278,120,22,()=>{state="menu"})}
+ btn("В МЕНЮ",(W-120)/2,278,120,22,()=>{state="menu"})}
 
-function newPlayer(){return{x:TG.start[0],y:TG.start[1],a:-Math.PI/2,hp:100,sta:100,dash:0,dashSta:0,dcd:0,vx:0,vy:0,down:0,impact:0,regionCell:-1,stepNoise:0,w:0,am:WP.map((_,i)=>i===0?(modes[S.level]||modes[1])[2]:0),cd:0,mcd:0,sw:0,inv:0,mf:0,sw2:0,car:null}}
+function newPlayer(){return{x:TG.start[0],y:TG.start[1],a:-Math.PI/2,hp:100,sta:100,dash:0,dashSta:0,dcd:0,vx:0,vy:0,down:0,impact:0,regionCell:-1,stepNoise:0,w:0,am:WP.map((_,i)=>i===0?(modes[S.level]||modes[1])[2]:i===6?999:0),cd:0,mcd:0,sw:0,inv:0,mf:0,sw2:0,car:null}}
 function placeCar(c,maxR=96){const x=c.x,y=c.y;for(let r=0;r<=maxR;r+=8)for(let i=0;i<12;i++){const nx=x+Math.cos(i*Math.PI/6)*r,ny=y+Math.sin(i*Math.PI/6)*r;if(!carCol(c,nx,ny,c.a)){c.x=nx;c.y=ny;return true}}return false}
 function initWorld(fresh){if(AREA)leave();C=[];C=genCars();if(fresh)BL.getContext("2d").clearRect(0,0,WW,WH);P=newPlayer();clearTransient();resetInput();PK=AMMO.map(a=>({x:a[0],y:a[1],t:false}));N=genN();PROPS=[];
  for(let i=0;i<12;i++){const d=DOORS[i%DOORS.length],q=fr(d.x+20+(i%3)*10,d.y+20);PROPS.push({x:q[0],y:q[1],vx:0,vy:0,mass:22,r:3})}
  const saved=S.garage;if(saved?.relocate){[saved.x,saved.y]=TG.gar;delete saved.relocate;save()}if(saved&&saved.m!==4&&Number.isInteger(saved.m)&&MD[saved.m]&&[saved.x,saved.y,saved.a,saved.hp].every(Number.isFinite)&&saved.x>=0&&saved.y>=0&&saved.x<=WW&&saved.y<=WH){C=C.filter(c=>c.ai||c.m!==saved.m||Math.hypot(c.x-saved.x,c.y-saved.y)>1);const c=mkCar(saved.m,saved.x,saved.y,saved.a,MD[saved.m].cols.includes(saved.col)?saved.col:MD[saved.m].cols[0]);c.hp=Math.max(0,Math.min(100,saved.hp));c.kit=(saved.kit|0)&3;c.br=[1,2].includes(saved.br)?saved.br:0;c.brRoll=true;c.saved=true;if(placeCar(c))C.push(c)}
  for(const k in ARS){ARS[k].seen=false;for(const n of ARS[k].n){n.dead=false;n.pn=0}ARS[k].bl.getContext("2d").clearRect(0,0,ARS[k].w,ARS[k].h)}
  const fp=frRoad(TG.start[0]+20,TG.start[1]+8),fedor=npc(fp[0],fp[1],"#605247");fedor.questwho="yard";fedor.god=true;fedor.fixed=true;fedor.calm=true;fedor.homeX=fp[0];fedor.homeY=fp[1];fedor.wt=0;fedor.wx=fp[0];fedor.wy=fp[1];fedor.idle=0;fedor.say=["Давно тебя не видел, Лёха.","Haven't seen you in a long time, Lyokha."];N.push(fedor);
- populateCrews();hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;copTheft=false;playerMoved()}
+ populateCrews();const miros=crews.find(c=>c.name==="Мировские");if(S.mission>=MS.length&&miros?.contact){const [bx,by]=frRoad(miros.contact[0]+30,miros.contact[1]+22);const bc=mkCar(5,bx,by,Math.PI/2,MD[5].cols[0]);bc.drv=false;bc.ai=false;bc.free=true;if(placeCar(bc))C.push(bc)}hurt=0;mcar=null;ZM=1;want=0;wantT=0;arrestT=0;raidT=40;copTheft=false;playerMoved()}
 function startGame(fresh){initWorld(fresh);cam.sn=true;const i=S.mission;
  if(i>=MS.length){S.mission=MS.length;startMission(i);state="play";return}
  /* Пролог главы уже показали в концовке предыдущей — второй раз не повторяем. */
@@ -1079,10 +1107,11 @@ function startMission(i){mi=i;si=0;E=[];
  /* Сюжет пройден — врагов нет, свободный мир. */
  if(mi>=MS.length){E=[];return}
  for(const s of m.steps)delete s.done;
- E=m.sp.map((e,j)=>({x:e[0],y:e[1],ax:e[0],ay:e[1],bx:e[2],by:e[3],a:0,hp:i>=2?2:1,tg:true,st:0,cd:1+rnd(1),sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0}));
+ E=m.sp.map((e,j)=>{const o={x:e[0],y:e[1],ax:e[0],ay:e[1],bx:e[2],by:e[3],a:0,aa:0,hp:i>=2?2:1,tg:true,st:0,cd:1+rnd(1),sw:0,lost:0,lx:0,ly:0,stuck:0,dead:false,think:j*.025,visible:false,hf:0,down:0,impact:0,vx:0,vy:0};if(m.guardFace&&Number.isFinite(m.guardFace[j]))o.a=o.aa=m.guardFace[j];return o});
  if(m.car){mcar=mkCar(m.car[2],m.car[0],m.car[1],Math.PI/2,m.car[3]);mcar.mc=true;placeCar(mcar,240);C.push(mcar)}
- msg=(S.lang==="en"?"Ch.":"Гл.")+(i+1)+" "+YR[i]+" · "+mname(i);msgT=4}
-function showCut(lines,done){const pages=[];for(const line of lines){if(line.o){pages.push(line);continue}const ru=wrap(line[1]||"",24),en=wrap(line[2]||line[1]||"",24),count=Math.max(1,Math.ceil((S.lang==="en"?en:ru).length/5));for(let i=0;i<count;i++)pages.push([line[0],ru.slice(i*5,i*5+5).join(" "),en.slice(i*5,i*5+5).join(" ")])}if(!pages.length){state="play";if(done)done();return}cut={l:pages,i:0,done};state="cut"}
+ msg=(S.lang==="en"?"Ch.":"Гл.")+(i+1)+" "+YR[i]+" · "+mname(i);msgT=4;
+ if(m.guards){msg=(S.lang==="en"?"Ambush at the door: "+m.guards+" armed guards block the way":"У входа засада: "+m.guards+" вооружённых преграждают путь");msgT=6}}
+function showCut(lines,done){const pages=[];const cw=Math.max(24,Math.floor((W-54)/5)),cl=Math.max(24,Math.floor((W-14)/5));for(const line of lines){if(line.o){pages.push(line);continue}const ru=wrap(line[1]||"",cw),en=wrap(line[2]||line[1]||"",cw),ml=6,count=Math.max(1,Math.ceil((S.lang==="en"?en:ru).length/ml));for(let i=0;i<count;i++)pages.push([line[0],ru.slice(i*ml,i*ml+ml).join(" "),en.slice(i*ml,i*ml+ml).join(" ")])}if(!pages.length){state="play";if(done)done();return}cut={l:pages,i:0,done};state="cut";SHK=0;hurt=0}
 function nextLine(){if(!cut)return;cut.i++;if(cut.i>=cut.l.length){const d=cut.done;cut=null;state="play";if(d)d()}}
 const CH=(q,qe,a,ae,b,be,va,vb,tag,say)=>({q:[q,qe],o:[[a,ae],[b,be]],v:[va,vb],tag:tag||"c",say:say||null});
 function choose(i){if(!cut)return;const ln=cut.l[cut.i];if(!ln||!ln.o)return;
@@ -1145,8 +1174,21 @@ function raiseWant(n){if(AREA||!P||state!=="play")return;if(!want&&!C.some(c=>c.
 function patrolSpot(){let bi=-1,ba=0,bd=1e9;for(let i=0;i<RD.length;i++){const r=RD[i],st=Math.max(8,Math.round(r.len/24));for(let s=0;s<=r.len;s+=st){const q=roadPt(r,s),d=Math.abs(Math.hypot(q.x-P.x,q.y-P.y)-150);if(d<bd){bd=d;bi=i;ba=s}}}return bi<0?null:[bi,ba]}
 function doRaid(){if(C.filter(c=>c.pol).length>=3)return;const sp=patrolSpot();if(!sp)return;const c=mkPolice(0,0,sp[0],sp[1],sr()<.5?1:-1);setLane(c);if(carCol(c,c.x,c.y,c.a))return;c.raid=true;C.push(c);msg="Рейд ГАИ: на улицах патруль. Не гони.";msgT=4;snd(260,.3,"square",.05)}
 function arrestRelease(pay){S.rub-=pay;want=wantT=arrestT=0;resetInput();save();msg="Патруль отпустил. −"+pay+" ₽";msgT=3}
-function arrestJail(fee){want=0;wantT=0;copTheft=false;fee=Math.min(fee||0,S.rub);S.rub-=fee;clock=450;if(P.car){P.car.drv=false;P.car.pax=false;P.car.v=0;P.car=null}const place=fr(...TG.police);P=newPlayer();clearTransient();resetInput();P.x=place[0];P.y=place[1];P.inv=1.5;playerMoved();cam.sn=true;save();
- showCut([["N","Двое суток в КПЗ. Скамейка, хлорка и тишина.","Two days in the holding cell."],["N","Утром дежурный вернул документы. Дверь отдела открылась.","Released at dawn."]],()=>{msg="Вышел из КПЗ"+(fee>0?": −"+fee+" ₽":"");msgT=3})}
+function arrestJail(fee){want=0;wantT=0;copTheft=false;fee=Math.min(fee||0,S.rub);S.rub-=fee;clock=450;if(P.car){P.car.drv=false;P.car.pax=false;P.car.v=0;P.car=null}
+ const took=(S.wp||[]).filter(i=>i>0&&i!==6);if(took.length)S.seized=[...new Set([...(S.seized||[]),...took])];S.wp=[0,6];
+ const place=fr(...TG.police);P=newPlayer();clearTransient();resetInput();P.x=place[0];P.y=place[1];P.inv=1.5;playerMoved();cam.sn=true;save();
+ const names=took.map(i=>WP[i].n).join(", "),retr=seizedFeeAll(took),canBuy=S.rub>=retr;
+ const lines=[["N","Двое суток в КПЗ. Скамейка, хлорка и тишина.","Two days in the holding cell."]];
+ if(took.length){S.tags=S.tags||{};S.tags.seize=-1;
+  lines.push(["N","По прибытии составили акт: "+names+" — на хранение до выяснения.","On intake they drew up a report: "+names+" held until further notice."]);
+ }
+ lines.push(["N","Утром дежурный вернул документы. Дверь отдела открылась.","Released at dawn."]);
+ if(took.length)lines.push(canBuy?CH("Дежурный держит акт над стойкой: «Забрать можно сейчас. "+retr+" ₽ — и расписывайся».","The desk sergeant holds the report over the counter: «"+retr+" ₽ — and sign for it».",
+   "Выкупить: −"+retr+" ₽","Buy them back — "+retr+" ₽","Пусть лежат","Leave them in custody",0,0,"seize",
+   [["Дежурный протирает ствол ветошью и кладёт тебе на ладонь: «Не свети».","The sergeant wipes the gun and drops it into your palm: «Don't flash it»."],
+    ["Киваешь. Акт уезжает в ящик под стойкой: «Пять дней, потом переплавка».","You nod. The report slides into the drawer: «Five days, then the furnace»."] ])
+   :["N","Дежурный назвал цену: "+retr+" ₽. В кармане меньше — акт уезжает в ящик под стойкой.","The sergeant names a price: "+retr+" ₽. Not enough in your pocket — the report goes into the drawer."]);
+ showCut(lines,()=>{const back=took.length&&S.tags.seize===0&&seizeBuyback(took);msg="Вышел из КПЗ"+(fee>0?": −"+fee+" ₽":"")+(back?". Стволы при тебе.":took.length?". Оружие изъяли — забрать в отделе.":"");msgT=4})}
 function arrestCut(){if(state!=="play")return;
  S.tags=S.tags||{};S.tags.arrest=-1;
  if(copTheft){copTheft=false;showCut([["N","Угон милицейской машины. Взятка не поможет — двое суток в КПЗ.","Stealing a police car. No bribe will help — two days in the holding cell."]],()=>arrestJail(150));return}
@@ -1163,7 +1205,8 @@ function killE(e){if(safeZone()||e.dead)return;e.dead=true;kills++;splat(e.x,e.y
 function sees(e){const dx=P.x-e.x,dy=P.y-e.y,d=Math.hypot(dx,dy);if(d>115)return false;let da=Math.atan2(dy,dx)-e.a;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)>.95&&d>22)return false;return los(e.x,e.y,P.x,P.y)}
 function shoot(){
  if(safeZone()||P.down>0||P.cd>0||P.car)return;
- const w=WP[P.w];if(P.am[P.w]<=0){P.cd=.3;snd(60,.05,"square",.04);msg="Нет патронов — купи в магазине";msgT=1.5;return}
+ const w=WP[P.w];if(w.melee){if(P.cd>0)return;P.cd=w.cd;P.sw2=.18;snd(180,.06,"triangle",.05);for(const e of E)if(!e.dead){const dx=e.x-P.x,dy=e.y-P.y;if(Math.hypot(dx,dy)<w.range){let da=Math.atan2(dy,dx)-P.a;da=Math.atan2(Math.sin(da),Math.cos(da));if(Math.abs(da)<1.3)hitE(e,w.dmg)}}for(const n of N)if(!n.dead&&Math.hypot(n.x-P.x,n.y-P.y)<w.range)killN(n);return}
+ if(P.am[P.w]<=0){P.cd=.3;snd(60,.05,"square",.04);msg="Нет патронов — купи в магазине";msgT=1.5;return}
  if(touch){let best=null,bd=150;for(const e of E)if(!e.dead){const d=Math.hypot(e.x-P.x,e.y-P.y);if(d<bd&&los(P.x,P.y,e.x,e.y)){bd=d;best=e}}if(best)P.a=Math.atan2(best.y-P.y,best.x-P.x)}
  P.am[P.w]--;P.cd=w.cd;P.mf=.05;const spread=w.sp*(S.service?.[P.w]?.76:1);for(let i=0;i<w.pel;i++)bullet(P.x,P.y,P.a+(rnd(spread)-spread/2),w.v,"p",w.life);
  const sa=P.a+Math.PI/2;if(SH.length<96){const s=shellPool.pop()||{};s.x=P.x;s.y=P.y;s.vx=Math.cos(sa)*(40+rnd(20));s.vy=Math.sin(sa)*(40+rnd(20));s.t=.65;SH.push(s)}
@@ -1180,7 +1223,7 @@ function act(){if(P.down>0)return;if(doMissionInteraction())return;if(doAreaInte
 function hitP(damage=34,impact=false){if(safeZone()||!P||(!impact&&P.inv>0)||P.hp<=0)return;P.hp=Math.max(0,P.hp-damage*(modes[S.level]||modes[1])[1]);P.inv=.4;SHK=.6;fx(P.x,P.y,"#a01010",8);hurt=.25;splat(P.x,P.y,10,false);snd(80,.2,"sawtooth",.08);
  if(P.hp<=0){if(P.car){P.car.drv=false;P.car.v=0;P.car=null}state="dead";deadT=0;splat(P.x,P.y,30,true);corpse(P.x,P.y,P.a,SK[S.skin])}}
 function respawn(){if(AREA)leave();cam.sn=true;const fee=Math.min(100,S.rub);S.rub-=fee;save();C=C.filter(c=>!c.drv);P=newPlayer();clearTransient();resetInput();const p=fr(P.x,P.y);P.x=p[0];P.y=p[1];playerMoved();hurt=0;
- const i=mi;startMission(i);if(fee>0){msg="Больничка: −"+fee+" ₽";msgT=3}}
+ const i=Math.min(S.mission,MS.length);startMission(i);if(fee>0){msg="Больничка: −"+fee+" ₽";msgT=3}}
 const inputVector=[0,0,0];
 function inputs(){let mx=0,my=0;
  if(held("left"))mx--;if(held("right"))mx++;if(held("up"))my--;if(held("down"))my++;
@@ -1251,12 +1294,12 @@ function updateBullets(dt){
 }
 function update(dt){
  tm+=dt;if(msgT>0)msgT-=dt;if(state==="dead")deadT+=dt;
+ /* Кадровые позиции фиксируем всегда: вне режима игры сцена стоит на месте и не мерцает из-за интерполяции (кат-сцены, пауза, смерть). */
+ if(P){P.px=P.x;P.py=P.y;P.pa=P.a;
+  for(const c of C){c.px=c.x;c.py=c.y;c.pa=c.a}
+  for(const n of N){n.px=n.x;n.py=n.y;n.pa=n.a}
+  for(const e of E){e.px=e.x;e.py=e.y;e.pa=e.a}}
  if(state!=="play")return;
- /* Позиции на начало шага — для плавной интерполяции при отрисовке на 120 Гц экранах. */
- P.px=P.x;P.py=P.y;P.pa=P.a;
- for(const c of C){c.px=c.x;c.py=c.y;c.pa=c.a}
- for(const n of N){n.px=n.x;n.py=n.y;n.pa=n.a}
- for(const e of E){e.px=e.x;e.py=e.y;e.pa=e.a}
  const pc=clock;clock=(clock+dt*4.8)%1440;if(clock<pc&&S.debt>0)S.debt=Math.min(1e9,Math.round(S.debt*1.15));updateWeather(dt);
  const[mx,my,l]=inputs();
  P.cd-=dt;P.mcd-=dt;P.inv-=dt;P.mf-=dt;P.sw2-=dt;P.dcd-=dt;P.impact=Math.max(0,P.impact-dt);hurt-=dt;
@@ -1272,9 +1315,9 @@ function update(dt){
  else if(P.down>0){P.down-=dt;mv(P,P.vx*dt,P.vy*dt,true);P.vx*=Math.exp(-5*dt);P.vy*=Math.exp(-5*dt);dashReq=meleeReq=false;if(P.down<=0)for(const c of C)if(inCar(c,P.x,P.y,4))eject(c,P)}
  else{const sneak=held("sneak"),spr=!sneak&&held("sprint")&&P.sta>5&&l>.1;P.sta=Math.max(0,Math.min(100,P.sta+(spr?-22:16)*dt));
   if((dashReq||dashId!==null)&&P.dash<=0&&P.dcd<=0&&P.sta>=30){P.dash=.2;P.dashSta=30;P.dcd=1;const da=l>.1?Math.atan2(my,mx):P.a;P.dx=Math.cos(da);P.dy=Math.sin(da);snd(260,.08,"triangle",.05)}dashReq=false;
-  const tv=sneak?18:spr?62:40,k=1-Math.exp(-(l>.05?6.5:9)*dt);P.vx+=(mx*tv-P.vx)*k;P.vy+=(my*tv-P.vy)*k;
+  const tv=(sneak?18:spr?62:40)*PLAYER_SPEED,k=1-Math.exp(-(l>.05?6.5:9)*dt);P.vx+=(mx*tv-P.vx)*k;P.vy+=(my*tv-P.vy)*k;
   if(waterAt(P.x,P.y)){P.vx*=.45;P.vy*=.45}
-  if(P.dash>0){P.dash-=dt;if(P.dashSta>0){const q=Math.min(P.dashSta,150*dt);P.dashSta-=q;P.sta=Math.max(0,P.sta-q)}mv(P,P.dx*105*dt,P.dy*105*dt)}else mv(P,P.vx*dt,P.vy*dt);
+  if(P.dash>0){P.dash-=dt;if(P.dashSta>0){const q=Math.min(P.dashSta,150*dt);P.dashSta-=q;P.sta=Math.max(0,P.sta-q)}mv(P,P.dx*105*PLAYER_SPEED*dt,P.dy*105*PLAYER_SPEED*dt)}else mv(P,P.vx*dt,P.vy*dt);
   if(waterAt(P.x,P.y)){P.hp=Math.max(0,P.hp-16*dt);hurt=Math.max(hurt,.15);msg="Тонешь! Выбирайся на берег";msgT=.6;if(!P.hp){state="dead";deadT=0;msg="Утонул";msgT=3;return}}
   if(l>.1){P.stepNoise+=Math.hypot(P.vx,P.vy)*dt;if(P.stepNoise>12){P.stepNoise=0;noise(P.x,P.y,sneak?5:spr?48:16)}}
   if(l>.1){P.sw+=dt*12;if(arrowAim||touch||held("up")||held("down")||held("left")||held("right"))P.a=Math.atan2(my,mx)}
@@ -1301,7 +1344,11 @@ function update(dt){
   e.think-=dt;if(e.think<=0){e.think=.18;e.visible=sees(e)}const v=e.visible;
   if(v){e.st=1;e.lost=0;e.lx=P.x;e.ly=P.y}else if(e.st===1){e.lost+=dt;if(e.lost>5)e.st=0}
   const ox=e.x,oy=e.y;let tx,ty,sp;
-  if(e.st===0){tx=e.tg?e.bx:e.ax;ty=e.tg?e.by:e.ay;sp=30;if(Math.hypot(tx-e.x,ty-e.y)<3)e.tg=!e.tg;e.a=Math.atan2(ty-e.y,tx-e.x)}
+  if(e.st===0){tx=e.tg?e.bx:e.ax;ty=e.tg?e.by:e.ay;
+   /* Стоячий часовой (точки патруля совпадают): не ходит и не упирается в стены — стоит на месте и медленно осматривается. */
+   if(e.aa==null)e.aa=Math.atan2(ty-e.y,tx-e.x);
+   if(Math.hypot(e.bx-e.ax,e.by-e.ay)<4){sp=0;e.a=e.aa+Math.sin(tm*.9+e.x)*.55}
+   else{sp=30;if(Math.hypot(tx-e.x,ty-e.y)<3)e.tg=!e.tg;e.a=Math.atan2(ty-e.y,tx-e.x)}}
   else if(v){const d=Math.hypot(P.x-e.x,P.y-e.y);e.a=Math.atan2(P.y-e.y,P.x-e.x);tx=P.x;ty=P.y;sp=d>55?52:0;
    /* Случайная перестрелка: 30% шанс передвигаясь пешком, 0% на авто. */
    if(e.cd<=0&&d<125&&los(e.x,e.y,P.x,P.y)&&(!P.car||rnd(1)<.3)){e.cd=1.1+rnd(.6);bullet(e.x,e.y,e.a+(rnd(.24)-.12),125,"e");snd(110,.1,"sawtooth",.05);noise(e.x,e.y,100)}}
@@ -1317,8 +1364,14 @@ function update(dt){
  cam.zm=P.car&&!P.car.pax?1-.3*Math.min(1,Math.abs(P.car.v)/120):1;
  /* Отступ камеры считаем с учётом зума: иначе на скорости у края карты проступает пустота. */
  const cz=Math.min(ZM,cam.zm),hw=W/(2*cz),hh=H/(2*cz);
- cam.tx=Math.max(hw-W/2,Math.min(WW-hw-W/2,P.x+lx-W/2));cam.ty=Math.max(hh-H/2,Math.min(WH-hh-H/2,P.y+ly-H/2))}
+ cam.tx=WW<=hw*2?(WW-W)/2:Math.max(hw-W/2,Math.min(WW-hw-W/2,P.x+lx-W/2));cam.ty=WH<=hh*2?(WH-H)/2:Math.max(hh-H/2,Math.min(WH-hh-H/2,P.y+ly-H/2))}
 function followCam(dt){if(!P)return;
+ /* Во время кат-сцены мир статичен, но камеру наводим на героя: иначе интро глав показывает угол карты, а на выходе кадр «прыгает». */
+ if(state==="cut"){const cz=Math.min(ZM,cam.zm||1),hw=W/(2*cz),hh=H/(2*cz);
+  cam.tx=WW<=hw*2?(WW-W)/2:Math.max(hw-W/2,Math.min(WW-hw-W/2,P.x-hw));
+  cam.ty=WH<=hh*2?(WH-H)/2:Math.max(hh-H/2,Math.min(WH-hh-H/2,P.y-hh));
+  if(cam.sn){cam.x=cam.tx;cam.y=cam.ty;cam.sn=false;return}
+  const kc=1-Math.exp(-8*dt);cam.x+=(cam.tx-cam.x)*kc;cam.y+=(cam.ty-cam.y)*kc;return}
  if(cam.sn){if(state!=="play")return;cam.x=cam.tx||cam.x;cam.y=cam.ty||cam.y;ZM=cam.zm||1;cam.sn=false;return}
  const k=1-Math.exp(-(P.car?9:13)*dt);cam.x+=(cam.tx-cam.x)*k;cam.y+=(cam.ty-cam.y)*k;
  ZM+=(cam.zm-ZM)*(1-Math.exp(-dt*4))}
@@ -1358,7 +1411,7 @@ function drawCar(c){const m=MD[c.m],L=m.L,w=m.W,hl=L/2,hw=w/2,id=c.m,tk=id===8||
  g.fillStyle="#ffe8a0";g.fillRect(hl-1,-hw+1,1,2);g.fillRect(hl-1,hw-3,1,2);
  g.fillStyle="#c02020";g.fillRect(-hl,-hw+1,1,2);g.fillRect(-hl,hw-3,1,2);
  g.restore()}
-function txt(s,x,y,c,al,sz){s=tr(s);g.font="bold "+(sz||9)+"px monospace";g.textAlign=al||"left";g.lineJoin="round";g.lineWidth=2.4;g.strokeStyle="#000";g.strokeText(s,x,y);g.fillStyle=c||"#fff";g.fillText(s,x,y)}
+function txt(s,x,y,c,al,sz,lw){s=tr(s);g.font="bold "+(sz||9)+"px monospace";g.textAlign=al||"left";g.lineJoin="round";g.lineWidth=lw||2.4;g.strokeStyle="#000";g.strokeText(s,x,y);g.fillStyle=c||"#fff";g.fillText(s,x,y)}
 function btn(l,x,y,w,h,fn,off){btns.push({x,y,w,h,fn:off?null:fn});
  const hv=!off&&((mouse.has&&mouse.x>x&&mouse.x<x+w&&mouse.y>y&&mouse.y<y+h)||(padHover.on&&padHover.x>x&&padHover.x<x+w&&padHover.y>y&&padHover.y<y+h));
  g.fillStyle="#000";g.fillRect(x,y,w,h);g.fillStyle=off?"#14170f":hv?"#57512f":"#23261c";g.fillRect(x+1,y+1,w-2,h-2);
@@ -1370,7 +1423,7 @@ const SKY=(()=>{const a=[];let x=0;sd=11;while(x<W){const w=22+(sr()*20|0),h=90+
 function menuBg(){g.fillStyle="#14090c";g.fillRect(0,0,W,H);
  for(const b of SKY){g.fillStyle="#2a1c20";g.fillRect(b.x,H-b.h,b.w,b.h);let k=0;for(let i=0;i<b.w/6;i++)for(let j=0;j<b.h/9;j++){g.fillStyle=b.win[k++]?"#d8a030":"#150c10";g.fillRect(b.x+3+i*6,H-b.h+4+j*9,3,5)}}
  g.fillStyle="rgba(0,0,0,.25)";for(let y=0;y<H;y+=3)g.fillRect(0,y,W,1)}
-function title(sub){menuBg2();crest(28,29);txt("1991 / 1999",49,29,"#cbc5af",0,8);txt("АРЗАМАС",16,61,"#efe4cd",0,25);txt("90-е",160,77,"#c8b383","right",11);if(sub)txt(sub,18,82,"#c7c9b9",0,7);txt("KOLOSOV  /  КРИМИНАЛЬНАЯ ХРОНИКА",W/2,H-8,"#b0b29c","center",5)}
+function title(sub){menuBg2();crest(28,29);txt("1991 / 1999",49,29,"#cbc5af",0,8);txt("АРЗАМАС",16,61,"#efe4cd",0,25);txt("90-е",W-20,77,"#c8b383","right",11);if(sub)txt(sub,18,82,"#c7c9b9",0,7);txt("KOLOSOV  /  КРИМИНАЛЬНАЯ ХРОНИКА",W/2,H-8,"#b0b29c","center",5)}
 function menuScreenOld(){
  title("глава "+Math.min(S.mission+1,MS.length)+"   ₽ "+S.rub);
  btn("ПРОДОЛЖИТЬ",30,100,120,22,()=>{startGame(true)},!had);
@@ -1380,18 +1433,18 @@ function menuScreenOld(){
 function shopScreen(){
  title("магазин стилей   ₽ "+S.rub);
  Object.keys(SK).forEach((id,i)=>{const k=SK[id],y=84+i*42,own=S.owned.includes(id),eq=S.skin===id;
-  g.fillStyle="#2a1418";g.fillRect(10,y,160,38);g.save();g.translate(28,y+19);g.scale(2.2,2.2);person(g,0,0,-Math.PI/2+.4,k,0,false,true);g.restore();
+  g.fillStyle="#2a1418";g.fillRect(10,y,W-20,38);g.save();g.translate(28,y+19);g.scale(2.2,2.2);person(g,0,0,-Math.PI/2+.4,k,0,false,true);g.restore();
   txt(k.n,48,y+13,"#e8c060");txt(own?(eq?"НАДЕТО":"КУПЛЕНО"):"₽ "+k.p,48,y+25,own?"#8c8":"#fff");
-  btn(own?(eq?"ОК":"НАДЕТЬ"):"КУПИТЬ",118,y+23,48,12,()=>{if(own){S.skin=id;save()}else if(S.rub>=k.p){S.rub-=k.p;S.owned.push(id);S.skin=id;save();msg="Куплено!"}else msg="Не хватает рублей";msgT=1.5},eq)});
+  btn(own?(eq?"ОК":"НАДЕТЬ"):"КУПИТЬ",W-62,y+23,48,12,()=>{if(own){S.skin=id;save()}else if(S.rub>=k.p){S.rub-=k.p;S.owned.push(id);S.skin=id;save();msg="Куплено!"}else msg="Не хватает рублей";msgT=1.5},eq)});
  if(msgT>0)txt(msg,W/2,262,"#f66","center");
- btn("НАЗАД",30,274,120,22,()=>{state=back})}
+ btn("НАЗАД",(W-120)/2,274,120,22,()=>{state=back})}
 function portrait(w,x,y){const s=SP[w];g.fillStyle="#241418";g.fillRect(x,y,32,32);g.fillStyle="#d0a080";g.fillRect(x+8,y+8,16,18);g.fillStyle=s.h;g.fillRect(x+7,y+5,18,6);
  g.fillStyle="#111";g.fillRect(x+11,y+15,3,2);g.fillRect(x+18,y+15,3,2);if(w==="M")g.fillRect(x+11,y+21,10,2);g.fillStyle=s.c;g.fillRect(x+4,y+26,24,6)}
 /* Тёмное время суток: 0 — день, ~0.8 — глубокая ночь. */
 function nightAmt(){const hh=clock/60,Lg=(Math.cos((hh-13)/24*6.2832)+1)/2;return Math.pow(1-Lg,1.4)*.8}
 function drawWorld(){
  g.fillStyle="#111";g.fillRect(0,0,W,H);g.save();
- const shx=(Math.random()-.5)*SHK*6,shy=(Math.random()-.5)*SHK*6,ox=W/2-ZM*(W/2+cam.x-shx),oy=H/2-ZM*(H/2+cam.y-shy);
+ const sk=state==="play"?SHK:0,shx=(Math.random()-.5)*sk*6,shy=(Math.random()-.5)*sk*6,ox=W/2-ZM*(W/2+cam.x-shx),oy=H/2-ZM*(H/2+cam.y-shy);
  g.translate(Math.round(ox*2)/2,Math.round(oy*2)/2);g.scale(ZM,ZM);
  /* При отдалении включаем сглаживание: иначе земля «дрожит» на скорости. */
  g.imageSmoothingEnabled=ZM<.999;g.drawImage(GR,0,0);g.drawImage(BL,0,0);
@@ -1406,26 +1459,26 @@ function drawWorld(){
    g.fillStyle="#465b57";g.fillRect(-13,-6,20,2);g.fillRect(-12,-4,1,2);g.fillRect(6,-4,1,2);
    g.fillStyle="#7a5a3a";g.fillRect(-9,0,12,2);
    g.fillStyle="#cbab61";g.fillRect(10,-4,2,8);g.fillStyle="#e8e0c8";g.fillRect(9,-5,4,2);g.restore()}
-  for(const l of LAMPS){if(Math.abs(l.x-P.x)>200||Math.abs(l.y-P.y)>300)continue;
+  for(const l of LAMPS){if(Math.abs(l.x-P.x)>W/2+110||Math.abs(l.y-P.y)>H/2+140)continue;
    g.fillStyle="#2b2b27";g.fillRect(l.x-1,l.y-1,2,7);g.fillStyle=nt0>.15?"#ffe2a0":"#6d6a5e";g.fillRect(l.x-2,l.y-3,4,2)}}
- for(const c of C)if(Math.abs(c.x-P.x)<160&&Math.abs(c.y-P.y)<250){const sx=c.x,sy=c.y,sa=c.a;c.x=iX(c);c.y=iY(c);c.a=iA(c);drawCar(c);c.x=sx;c.y=sy;c.a=sa}
+ for(const c of C)if(Math.abs(c.x-P.x)<W/2+70&&Math.abs(c.y-P.y)<H/2+90){const sx=c.x,sy=c.y,sa=c.a;c.x=iX(c);c.y=iY(c);c.a=iA(c);drawCar(c);c.x=sx;c.y=sy;c.a=sa}
  g.drawImage(WLC,0,0);
  for(const p of PK)if(!p.t){g.fillStyle="#3a5a2a";g.fillRect(p.x-4,p.y-3,8,6);g.fillStyle="#e8c060";g.fillRect(p.x-3,p.y-1,6,2)}
  for(const s of SH){g.fillStyle="#d8b030";g.fillRect(s.x|0,s.y|0,1,1)}
  for(const p of PROPS){g.fillStyle="#453426";g.fillRect(p.x-3,p.y-3,6,6);g.strokeStyle="#967343";g.lineWidth=1;g.strokeRect(p.x-2.5,p.y-2.5,5,5);g.beginPath();g.moveTo(p.x-2,p.y-2);g.lineTo(p.x+2,p.y+2);g.stroke()}
  if(!AREA)for(const d of DOORS){g.fillStyle="#c8903a";g.fillRect(d.x-4,d.y-6,8,12);g.fillStyle="#e8c060";g.fillRect(d.x-3,d.y-5,6,1)}
  else{g.fillStyle="#e8c060";g.fillRect(AREA.ex-10,AREA.ey-3,20,6);txt("ВЫХОД",AREA.ex,AREA.ey-6,"#fff","center",6);txt("Действие ["+keyName(bindings.act)+"]",AREA.bx,AREA.by,"#8f8","center",6)}
- if(AREA&&AREA.objects)for(const o of AREA.objects){g.fillStyle=o.used?"#737363":"#d4b454";g.fillRect(o.x-5,o.y-5,10,10);g.fillStyle="#26231a";g.fillRect(o.x-3,o.y-3,6,6);
+ if(AREA&&AREA.objects)for(const o of AREA.objects){if(o.id==="stash"&&!AREA.hostile)continue;g.fillStyle=o.used?"#737363":"#d4b454";g.fillRect(o.x-5,o.y-5,10,10);g.fillStyle="#26231a";g.fillRect(o.x-3,o.y-3,6,6);
   if(o.id==="candle"){g.fillStyle="#eee0b2";g.fillRect(o.x-1,o.y-3,2,5);g.fillStyle="#e8a848";g.fillRect(o.x-1,o.y-6,2,2)}
   else if(o.id==="photo"){g.strokeStyle="#d7c28c";g.strokeRect(o.x-5,o.y-5,10,10)}
   else if(o.id==="ledger"){g.fillStyle="#d1c39b";g.fillRect(o.x-4,o.y-3,8,6);g.fillStyle="#6b5942";g.fillRect(o.x-2,o.y-2,1,4)}
   else if(o.id==="stash"){g.fillStyle="#473629";g.fillRect(o.x-5,o.y-3,10,7);g.fillStyle="#a38a53";g.fillRect(o.x-5,o.y-4,10,2)}
   txt(o.label,o.x,o.y-9,o.used?"#888":"#ecd18a","center",5)}
- for(const n of N)if(!n.dead&&Math.abs(n.x-P.x)<160&&Math.abs(n.y-P.y)<250){const nx=iX(n),ny=iY(n);person(g,nx,ny,iA(n),n.k,n.sw,n.down>0,false);if(Math.hypot(nx-P.x,ny-P.y)<42&&n.say)txt(S.lang==="en"?n.say[1]:n.say[0],nx,ny-8,"#fff","center",6)}
- for(const e of E)if(!e.dead&&Math.abs(e.x-P.x)<160&&Math.abs(e.y-P.y)<250){const ex=iX(e),ey=iY(e);person(g,ex,ey,iA(e),EK,e.sw,e.down>0,true);if(e.hf>0){g.fillStyle="rgba(255,255,255,.6)";g.fillRect(ex-3,ey-3,6,6)}}
- if(P.hp>0&&!P.car)person(g,iX(P),iY(P),iA(P),SK[S.skin],P.sw,P.down>0,!safeZone()&&P.am[P.w]>0?[6,9,11,6,6,10][P.w]:0,P.mf>0);
+ for(const n of N)if(!n.dead&&Math.abs(n.x-P.x)<W/2+70&&Math.abs(n.y-P.y)<H/2+90){const nx=iX(n),ny=iY(n);person(g,nx,ny,iA(n),n.k,n.sw,n.down>0,false);if(Math.hypot(nx-P.x,ny-P.y)<42&&n.say)txt(S.lang==="en"?n.say[1]:n.say[0],nx,ny-8,"#fff","center",6)}
+ for(const e of E)if(!e.dead&&Math.abs(e.x-P.x)<W/2+70&&Math.abs(e.y-P.y)<H/2+90){const ex=iX(e),ey=iY(e);person(g,ex,ey,iA(e),EK,e.sw,e.down>0,true);if(e.hf>0){g.fillStyle="rgba(255,255,255,.6)";g.fillRect(ex-3,ey-3,6,6)}}
+ if(P.hp>0&&!P.car)person(g,iX(P),iY(P),iA(P),SK[S.skin],P.sw,P.down>0,!safeZone()&&(P.w===6||P.am[P.w]>0)?[6,9,11,6,6,10,0][P.w]:0,P.mf>0);
  for(const f of FX){g.fillStyle=f.c;g.fillRect(f.x|0,f.y|0,1.5,1.5)}for(const f of FT)txt(f.s,f.x,f.y,f.c,"center",6);
- if(P.sw2>0){g.strokeStyle="#ddd";g.lineWidth=2;g.beginPath();g.arc(P.x,P.y,14,P.a-1,P.a+1);g.stroke()}
+ if(P.sw2>0){if(P.w===6){g.fillStyle="#e8c090";const fx0=P.x+Math.cos(P.a)*11,fy0=P.y+Math.sin(P.a)*11;g.beginPath();g.arc(fx0,fy0,3,0,6.3);g.fill()}else{g.strokeStyle="#ddd";g.lineWidth=2;g.beginPath();g.arc(P.x,P.y,14,P.a-1,P.a+1);g.stroke()}}
  for(const b of B){g.fillStyle=b.own==="p"?"#ffe070":"#ff6040";g.fillRect(b.x-1,b.y-1,2,2)}
  const t=state==="play"?target():null;
  if(t){const dx=t.x-P.x,dy=t.y-P.y,d=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
@@ -1436,7 +1489,8 @@ function drawWorld(){
  if(nt>.02){g.fillStyle="rgba(6,10,40,"+nt+")";g.fillRect(0,0,W,H);g.globalCompositeOperation="lighter";
   const sx=x=>W/2+ZM*(x-cam.x-W/2),sy=y=>H/2+ZM*(y-cam.y-H/2);
   const gl=(x,y,r,a)=>{if(x<-r||x>W+r||y<-r||y>H+r)return;const q=g.createRadialGradient(x,y,1,x,y,r);q.addColorStop(0,"rgba(255,225,150,"+a+")");q.addColorStop(1,"rgba(255,225,150,0)");g.fillStyle=q;g.fillRect(x-r,y-r,2*r,2*r)};
-  for(const c of C)if(c.drv||c.ai){const m=MD[c.m];gl(sx(c.x+Math.cos(c.a)*(m.L/2+14)),sy(c.y+Math.sin(c.a)*(m.L/2+14)),30*ZM,.55*nt)}
+  const beam=(x,y,ang,len,hw,a)=>{if(x<-len||x>W+len||y<-len||y>H+len)return;g.save();g.translate(x,y);g.rotate(ang);const q=g.createLinearGradient(0,0,len,0);q.addColorStop(0,"rgba(255,236,176,"+a+")");q.addColorStop(.45,"rgba(255,226,150,"+(a*.5)+")");q.addColorStop(1,"rgba(255,226,150,0)");g.fillStyle=q;g.beginPath();g.moveTo(0,-hw*.4);g.lineTo(0,hw*.4);g.lineTo(len,hw);g.lineTo(len,-hw);g.closePath();g.fill();g.restore()};
+  for(const c of C)if(c.drv||c.ai){const m=MD[c.m],fx=c.x+Math.cos(c.a)*(m.L/2+6),fy=c.y+Math.sin(c.a)*(m.L/2+6);beam(sx(fx),sy(fy),c.a,82*ZM,24*ZM,.5*nt);gl(sx(fx),sy(fy),13*ZM,.42*nt)}
   for(const l of LAMPS)gl(sx(l.x),sy(l.y),26*ZM,.34*nt);
   if(!P.car)gl(sx(P.x),sy(P.y),24*ZM,.3*nt);g.globalCompositeOperation="source-over"}
  if(WEATHER.rain>0&&!AREA){g.fillStyle="rgba(23,32,43,"+(.12*WEATHER.rain)+")";g.fillRect(0,0,W,H);g.strokeStyle="rgba(190,211,222,"+(.48*WEATHER.rain)+")";g.lineWidth=.65;for(const drop of WEATHER.drops){g.beginPath();g.moveTo(drop.x,drop.y);g.lineTo(drop.x-2,drop.y+drop.len);g.stroke()}}
@@ -1451,15 +1505,15 @@ function hud(){
  panel(3,3,54,14);txt("₽ "+S.rub,6,12,S.debt>0?"#e08a6a":"#e2c473","left",8);if(S.debt>0)txt("−"+S.debt,54,12,"#c0553a","right",6);
  panel(60,3,63,14);
  if(P.car){txt(MD[P.car.m].n.slice(0,11),63,12,"#e8e6d8","left",6);txt(Math.round(Math.abs(P.car.v)*.8)+" км/ч",121,12,"#8fd0e0","right",6)}
- else{txt(WP[P.w].n,63,12,"#e8e6d8","left",7);txt(String(P.am[P.w]),121,12,P.am[P.w]>0?"#e2c473":"#e07a6a","right",8)}
- panel(126,3,30,14);txt(String(clock/60|0).padStart(2,"0")+":"+String(clock%60|0).padStart(2,"0"),141,12,"#8fd0e0","center",8);
- g.fillStyle="#000";g.fillRect(159,3,18,14);g.fillStyle="#7a1420";g.fillRect(160,4,16,12);g.fillStyle="#cf6a44";g.fillRect(160,4,16,2);txt("II",168,13,"#f2e4c8","center",8);
+ else{txt(WP[P.w].n,63,12,"#e8e6d8","left",7);txt(WP[P.w].melee?"∞":String(P.am[P.w]),121,12,WP[P.w].melee||P.am[P.w]>0?"#e2c473":"#e07a6a","right",8)}
+ panel(W-54,3,30,14);txt(String(clock/60|0).padStart(2,"0")+":"+String(clock%60|0).padStart(2,"0"),W-39,12,"#8fd0e0","center",8);
+ g.fillStyle="#000";g.fillRect(W-21,3,18,14);g.fillStyle="#7a1420";g.fillRect(W-20,4,16,12);g.fillStyle="#cf6a44";g.fillRect(W-20,4,16,2);txt("II",W-12,13,"#f2e4c8","center",8);
  // ——— здоровье / силы / розыск ———
  hbar(3,19,84,8,Math.max(0,P.hp)/100,"#c2352a","#2a0d0d");
  hbar(91,19,66,8,P.sta/100,"#3f9fd0","#102a38");
  txt("ХП "+Math.max(0,Math.round(P.hp)),45,25,"#f6e2d8","center",6);
  txt("СИЛЫ "+Math.round(P.sta),124,25,"#dcf0fa","center",6);
- panel(159,19,18,8);if(want>0)txt("★".repeat(Math.min(3,want)),168,25,"#e0b040","center",7);
+ panel(W-21,19,18,8);if(want>0)txt("★".repeat(Math.min(3,want)),W-12,25,"#e0b040","center",7);
  // ——— полоса задания ———
  const m=MS[mi],s=m&&m.steps[si];let st=S.lang==="en"?"Open world":"Открытый мир",sc="#93a38d";
  if(AREA&&safeZone()){st=S.lang==="en"?"SAFE ZONE":"БЕЗОПАСНАЯ ЗОНА";sc="#b8cc9c"}
@@ -1473,10 +1527,10 @@ function hud(){
   g.fillStyle="#000";g.beginPath();g.arc(sx,sy,23,0,6.3);g.fill();g.fillStyle="#161b16";g.beginPath();g.arc(sx,sy,22,0,6.3);g.fill();g.strokeStyle="#5f5a44";g.lineWidth=1;g.stroke();
   if(stick.id!==null){const dx=stick.x-stick.ox,dy=stick.y-stick.oy,l=Math.min(Math.hypot(dx,dy),22)||1,a=Math.atan2(dy,dx);g.fillStyle="#7c7a58";g.beginPath();g.arc(sx+Math.cos(a)*l,sy+Math.sin(a)*l,9,0,6.3);g.fill()}
   const touchBtn=(x,y,r,fill,label)=>{g.fillStyle="#000";g.beginPath();g.arc(x,y,r+1,0,6.3);g.fill();g.fillStyle=fill;g.beginPath();g.arc(x,y,r,0,6.3);g.fill();g.strokeStyle="#5f5a44";g.lineWidth=1;g.stroke();txt(label,x,y+3,"#f0e6cc","center",6)};
-  if(!P.car)touchBtn(150,222,11,"#20344f","РЫВОК");
-  touchBtn(150,250,14,"#1d3a26","ДЕЙСТВИЕ");
-  if(P.car&&!P.car.pax){touchBtn(150,285,16,"#1d4a26","ГАЗ▲");touchBtn(120,300,13,"#4a1d1d","ТОРМОЗ");touchBtn(88,300,13,"#20294a","ЗАД")}
-  if(!P.car){touchBtn(150,285,16,"#4a1d22","ОГОНЬ");touchBtn(120,300,12,"#46401d","БИТА");touchBtn(88,302,11,"#26264a","ОРУЖ")}}}
+  if(!P.car)touchBtn(W-30,222,11,"#20344f","РЫВОК");
+  touchBtn(W-30,250,14,"#1d3a26","ДЕЙСТВИЕ");
+  if(P.car&&!P.car.pax){touchBtn(W-30,285,16,"#1d4a26","ГАЗ▲");touchBtn(W-60,300,13,"#4a1d1d","ТОРМОЗ");touchBtn(W-92,300,13,"#20294a","ЗАД")}
+  if(!P.car){touchBtn(W-30,285,16,"#4a1d22","ОГОНЬ");touchBtn(W-60,300,12,"#46401d","БИТА");touchBtn(W-92,302,11,"#26264a","ОРУЖ")}}}
 function render(){
  btns.length=0;
  if(state==="menu")menuScreen2();
@@ -1484,23 +1538,23 @@ function render(){
  else if(state==="shop")shopScreen();else if(state==="buy")buyScreen();else if(state==="escape")escapeScreen();else if(state==="settings")settingsScreen();else if(state==="end")endScreen();
  else{drawWorld();
   if(state==="cut"&&cut){const ln=cut.l[cut.i];g.fillStyle="#000";g.fillRect(0,0,W,22);g.fillRect(0,H-22,W,22);
-   if(ln&&ln.o){g.fillStyle="#0c0709";g.fillRect(4,206,172,88);g.fillStyle="#e8c060";g.fillRect(4,206,172,1);g.fillRect(4,293,172,1);
-    wrap(S.lang==="en"?ln.q[1]:ln.q[0],26).slice(0,3).forEach((l,i)=>txt(l,10,215+i*10,"#fff",0,8));
-    btn(S.lang==="en"?ln.o[0][1]:ln.o[0][0],10,244,160,22,()=>choose(0));
-    btn(S.lang==="en"?ln.o[1][1]:ln.o[1][0],10,270,160,22,()=>choose(1));
-    txt("1 / 2  ·  тап",172,302,"#777","right",6)}
-   else{const sp=SP[ln[0]];g.fillStyle="#0c0709";g.fillRect(4,212,172,84);g.fillStyle="#e8c060";g.fillRect(4,212,172,1);g.fillRect(4,295,172,1);
-    portrait(ln[0],8,218);txt(sp.n,8,262,"#e8c060",0,7);wrap(S.lang==="en"?ln[2]:ln[1],24).slice(0,6).forEach((l,i)=>txt(l,46,226+i*10,"#fff",0,8));
-    txt("тап / пробел ▶",172,292,"#777","right",6)}}
+   if(ln&&ln.o){g.fillStyle="#0c0709";g.fillRect(4,206,W-8,90);g.fillStyle="#e8c060";g.fillRect(4,206,W-8,1);g.fillRect(4,295,W-8,1);
+    wrap(S.lang==="en"?ln.q[1]:ln.q[0],Math.max(24,Math.floor((W-20)/5))).slice(0,3).forEach((l,i)=>txt(l,10,215+i*12,"#fff",0,8,1.2));
+    btn(S.lang==="en"?ln.o[0][1]:ln.o[0][0],10,252,W-20,22,()=>choose(0));
+    btn(S.lang==="en"?ln.o[1][1]:ln.o[1][0],10,276,W-20,22,()=>choose(1));
+    txt("1 / 2  ·  тап",W-8,302,"#777","right",6)}
+   else{const sp=SP[ln[0]];g.fillStyle="#0c0709";g.fillRect(4,212,W-8,88);g.fillStyle="#e8c060";g.fillRect(4,212,W-8,1);g.fillRect(4,299,W-8,1);
+    portrait(ln[0],8,218);txt(sp.n,8,256,"#e8c060",0,7);wrap(S.lang==="en"?ln[2]:ln[1],Math.max(24,Math.floor((W-54)/5))).slice(0,6).forEach((l,i)=>txt(l,46,226+i*12,"#fff",0,8,1.2));
+    txt("тап / пробел ▶",W-8,296,"#777","right",6)}}
   else hud();
   if(state==="pause"){g.fillStyle="#0d110d";g.fillRect(0,0,W,H);txt("ПАУЗА",W/2,54,"#d5c8a7","center",18);
-   btn("ПРОДОЛЖИТЬ",20,83,140,24,()=>{state="play";resetInput()});
-   btn("КАРТА ГОРОДА",20,113,140,24,()=>openMap("pause"));
-   btn("НАСТРОЙКИ",20,143,140,24,()=>openSettings("pause"));
-   btn(S.debt>0?"Вернуть долг "+S.debt+" ₽":"Кредит +500 ₽",20,173,140,24,()=>{if(S.debt>0){const q=Math.min(S.rub,S.debt);S.rub-=q;S.debt-=q}else{S.rub+=500;S.debt=650}save()});
-   btn("В МЕНЮ",20,203,140,24,()=>{save();state="menu";resetInput()});txt("Карта города (M)",W/2,246,"#929d8c","center",7);const minutes=Math.floor(((S.playSeconds||0)+(S.readSeconds||0))/60);txt("В игре: "+Math.floor(minutes/60)+" ч "+minutes%60+" мин",W/2,265,"#929d8c","center",7);txt("Чтение: "+Math.floor((S.readSeconds||0)/60)+" мин",W/2,278,"#929d8c","center",7)}
+   btn("ПРОДОЛЖИТЬ",(W-140)/2,83,140,24,()=>{state="play";resetInput()});
+   btn("КАРТА ГОРОДА",(W-140)/2,113,140,24,()=>openMap("pause"));
+   btn("НАСТРОЙКИ",(W-140)/2,143,140,24,()=>openSettings("pause"));
+   btn(S.debt>0?"Вернуть долг "+S.debt+" ₽":"Кредит +500 ₽",(W-140)/2,173,140,24,()=>{if(S.debt>0){const q=Math.min(S.rub,S.debt);S.rub-=q;S.debt-=q}else{S.rub+=500;S.debt=650}save()});
+   btn("В МЕНЮ",(W-140)/2,203,140,24,()=>{save();state="menu";resetInput()});txt("Карта города (M)",W/2,246,"#929d8c","center",7);const minutes=Math.floor(((S.playSeconds||0)+(S.readSeconds||0))/60);txt("В игре: "+Math.floor(minutes/60)+" ч "+minutes%60+" мин",W/2,265,"#929d8c","center",7);txt("Чтение: "+Math.floor((S.readSeconds||0)/60)+" мин",W/2,278,"#929d8c","center",7)}
   if(state==="dead"){g.fillStyle="#0d0a0a";g.fillRect(0,0,W,H);txt("ТЫ ПОГИБ",W/2,120,"#f33","center",18);txt("больничка: −100 ₽",W/2,134,"#aaa","center",7);
-   if(deadT>.6){btn("ЕЩЁ РАЗ",30,150,120,22,respawn);btn("В МЕНЮ",30,178,120,22,()=>{save();state="menu"})}}}}
+   if(deadT>.6){btn("ЕЩЁ РАЗ",(W-120)/2,150,120,22,respawn);btn("В МЕНЮ",(W-120)/2,178,120,22,()=>{save();state="menu"})}}}}
 function fr(x,y){for(let r=0;r<=90;r+=6)for(let k=0;k<12;k++){const px=x+Math.cos(k*.5236)*r,py=y+Math.sin(k*.5236)*r;if(!col(px,py,6))return[px,py]}return[x,y]}
 /* Точка только на тротуаре: не на проезжей части и не в стене. */
 function frRoad(x,y){for(let r=0;r<=120;r+=6)for(let k=0;k<16;k++){const px=x+Math.cos(k*.3927)*r,py=y+Math.sin(k*.3927)*r;if(roadDist(px,py)>=9&&!col(px,py,6))return[px,py]}return fr(x,y)}
@@ -1508,26 +1562,26 @@ function setupMissions(){
  SP.R={n:"Рыжий",h:"#b04020",c:"#2a2a40"};EN["Рыжий"]="Redhead";
  const NM=[
  {n:"Дань",pay:800,sp:[],steps:[{t:"go",x:2274,y:1647,tx:"Езжай на автостанцию"},{t:"kill",tx:"Разберись с конкурентами Рыжего"}],
-  pre:[["N","1995 год. После «Ракушки» Лёха лёг на дно и устроился к Рыжему — собирать дань с перевозчиков."],["R","Автостанция — моя. Конкурентов там быть не должно, ясно?"],["L","Ясно. Мне нужны тишина и деньги. В любом порядке."]],
-  post:[["G","Лёха, Рыжий и Кабан давно под одной крышей. Ты опять не у тех работаешь."],["L","В Арзамасе других не бывает."]]},
+  pre:[["N","1995 год. После «Ракушки» Лёха затаился: не стрелял, не езжил по району, не брал заказов. Три месяца просто жил. Потом Рыжий сам нашёл — через двоюродного брата Фёдора, единственную ниточку, которая ещё держала Лёху в городе."],["N","Рыжий — с автостанции: маршрутки, чемоданы, перегруз. Кабан на рынке, а на дороге — Рыжий. Не меньше, просто не виднее."],["R","Автостанция — моя территория. Я не прошу любить, я прошу не трогать. Конкурентов там быть не должно — ни чужих, ни моих. Ясно?"],["L","Ясно. Мне нужны тишина и деньги. В любом порядке. Но без крови при свидетелях."],["R","Ты мне нравится, Лёха. Именно поэтому я тебя терплю. Поехали."]],
+  post:[["G","Лёха, ты к Рыжему пошёл, а он Кабану звонит по вечерам. Они давно под одной крышей — просто на разных этажах. Ты опять не у тех работаешь."],["L","Рыжий платит вовремя, а Кабан — нет. Разница есть."],["G","Разница есть. Только Кабан платит реже, а бьёт чаще. И на разных этажах долго не живут — одна крыша падает на обоих."]]},
  {n:"Бумер",pay:1100,car:[1116,930,5,"#101018"],sp:[],steps:[{t:"enter",tx:"Сядь в чёрный «бумер» (E)"},{t:"drive",x:1251,y:1238,tx:"Отгони его на Колхозный рынок"},{t:"kill",tx:"Встреть покупателей"}],
-  pre:[["R","Бумер стоит у центра. Гони на рынок, там ждут люди. Не царапай — машина дороже тебя."],["L","Понял. Дороже."]],
-  post:[["R","Хороший водитель. Только забудь, что там видел."],["N","В багажнике лежало не то, что обещали. Лёха сделал вид, что не открывал."]]},
+  pre:[["R","Бумер стоит у гостиницы, чёрный, тонировка. Гони на рынок, там у ворот ждут люди. Не твоя забота, что в багажнике — твоя забота, чтобы не поцарапать. Машина дороже тебя."],["L","Понял. Дороже."],["R","И не открывай. Что бы ни услышал в багажнике, там едет само. Поехал."],["N","Лёха сел в бумер: кожа, кондиционер, магнитола. Из чужой машины. Из чужой жизни. Поехал через весь город к рынку."]],
+  post:[["R","Хороший водитель. Ни царапины, ни запаха. Ты к этому способен. Только забудь, что там видел и слышал. Или не забудешь — тогда сам придёшь ко мне, а не я к тебе."],["N","В багажнике лежало не то, что обещали. Лёха сделал вид, что не открывал. Закрыл, не глядя, и поехал."],["L","Не моё дело, не мой багажник, не моя голова. Я водитель, а не свидетель. Пока."]]},
  {n:"Гостиница",pay:1400,sp:[],steps:[{t:"go",x:2425,y:1227,tx:"Езжай к гостинице «Арзамас»"},{t:"kill",tx:"Выживи"}],
-  pre:[["N","1997 год. Кабан вернулся в город и снял люкс в гостинице «Арзамас»."],["R","Кабан сам вышел на связь. Хочет поговорить. Возьми ствол."]],
-  post:[["K","Не стреляй! Михалыч жив. Он в Сочи, а общак в гаражах. Без меня туда не пройти."],["L","Договорились. Один раз."]]}];
+  pre:[["N","1997 год. Кабан вернулся в Арзамас не на рынок и не в район — он снял люкс в гостинице «Арзамас» и держал людей на ресепшене. В городе такое знали уже все, включая ментов."],["R","Кабан сам вышел на связь — просил передать: хочет поговорить. Про общак, про Михалыча, про гаражи. Ты мне нужен. Возьми ствол, но не доставай, пока я не скажу."],["L","А если это подстава? Если там его люди?"],["R","Если бы хотел подставить, не звал бы в люкс — позвал бы в подворотню. Езжай. Я в коридоре."]],
+  post:[["K","Не стреляй! Михалыч жив, я его неделю назад в Сочи видел. Общак в гаражах, в боксе. Но без меня туда не пройти — старший не пустит. У него приказ, и приказ — не мой."],["L","Зачем тебе это, Кабан? Ты мог уехать с деньгами и не возвращаться."],["K","Потому что гаражи — это не общак, это моя квартира. Вернусь без них и буду ночевать на вокзале. Либо вместе, либо я сам в ментовку. Договорились? Один раз."],["L","Один раз."]]}];
  const NE=[
- {n:"Tribute",s:["Head to the bus station","Deal with Redhead's rivals"],pre:["1995. After the Rakushka, Lyokha lay low and took a job with Redhead, collecting tribute from carriers.","The bus station is mine. No rivals there, clear?","Clear. I want quiet and money. In any order."],post:["Lyokha, Redhead and Boar are under one roof. You work for the wrong guys again.","There are no other kind in Arzamas."]},
- {n:"The Beamer",s:["Get in the black BMW (E)","Drive it to the market","Meet the buyers"],pre:["The Beamer is parked downtown. Drive it to the market, people are waiting. Don't scratch it — it's worth more than you.","Got it. More than me."],post:["Good driver. Just forget what you saw.","The trunk held not what was promised. Lyokha pretended he never opened it."]},
- {n:"The Hotel",s:["Drive to Hotel Arzamas","Survive"],pre:["1997. Boar is back in town and booked a suite at Hotel Arzamas.","Boar reached out himself. Wants to talk. Bring a gun."],post:["Don't shoot! Mikhalych is alive. He's in Sochi, and the stash is in the garages. You can't get there without me.","Deal. Just once."]}];
+ {n:"Tribute",s:["Head to the bus station","Deal with Redhead's rivals"],pre:["1995. After the Rakushka, Lyokha went quiet: no shots, no orders, no driving through the district. Three months of doing nothing. Then Redhead found him himself — through Fyodor's cousin, the only thread left.","Redhead runs the bus station: marshrutkas, suitcases, transfers. Boar has the market, Redhead has the road. Same size, different visibility.","The bus station is mine. I don't ask you to love me, I ask you not to touch it. No rivals there — not outsiders, not my own. Clear?","Clear. I want quiet and money. In any order. But no blood in front of witnesses.","I like you, Lyokha. That's why I'm putting up with you. Let's go."],post:["Lyokha, you went to Redhead, but Redhead calls Boar every evening. They're under one roof — just on different floors. You work for the wrong guys again.","Redhead pays on time, Boar doesn't. That's a difference.","The difference is: Boar pays less often and hits more often. And floors don't last long on their own — one roof falls on both."]},
+ {n:"The Beamer",s:["Get in the black BMW (E)","Drive it to the market","Meet the buyers"],pre:["The Beamer is parked by the hotel, black, tinted windows. Drive it to the market, there are people by the gates. Not your business what's in the trunk — your business is not to scratch it. The car is worth more than you.","Got it. More than me.","And don't open it. Whatever you hear in the trunk, it's riding on its own. Go.","Lyokha got in the Beamer: leather, air conditioning, a head unit. Someone else's car. Someone else's life. He drove across the whole city to the market."],post:["Good driver. Not a scratch, not a smell. You're capable of this. Just forget what you saw and heard. Or don't forget — then you'll come to me yourself instead of me coming to you.","The trunk held not what was promised. Lyokha closed it without looking and drove off.","Not my car, not my trunk, not my head. I'm a driver, not a witness. Not yet."]},
+ {n:"The Hotel",s:["Drive to Hotel Arzamas","Survive"],pre:["1997. Boar came back to Arzamas not to the market or the district — he booked a suite at Hotel Arzamas and kept men at reception. In this town everyone knew, including the police.","Boar reached out himself. Wants to talk: about the stash, about Mikhalych, about the garages. He needs you. Bring a gun, but don't draw until I say.","And if it's a setup? If his men are there?","If he wanted a setup, he'd have called you into an alley, not a suite. Go. I'll be in the corridor."],post:["Don't shoot! Mikhalych is alive, I saw him in Sochi a week ago. The stash is in the garages, in a box. But you can't get in without me — the manager won't let you. He has orders, and the orders aren't mine.","Why do you need this, Boar? You could have left with the money and never come back.","Because the garages aren't the stash — they're my flat. I come back without them and I sleep at the station. Together, or I go to the cops myself. Deal? Just once.","Once."]}];
  MS.splice(4,0,...NM);ENM.splice(4,0,...NE);
  const INTRO={n:"Возвращение",pay:150,sp:[],steps:[{t:"talk",who:"yard",tx:"Поговори со старым Фёдором"},{t:"enterArea",k:"home",tx:"Зайди в квартиру на окраине"},{t:"interact",k:"home",id:"photo",tx:"Осмотри семейную фотографию"},{t:"exitArea",tx:"Выйди из квартиры"}],
-  pre:[["N","Западная окраина Арзамаса. Осень 1991 года. Последний автобус ушёл."],["L","Сначала найду Фёдора. Он должен меня помнить."]],
-  post:[["N","Фёдор вспомнил твою семью и показал короткую дорогу к центру."],["L","Хватит вспоминать. Пора искать работу."]]};
+  pre:[["N","Западная окраина Арзамаса. Осень 1991-го. Лёха ехал из армии до Казани, до Нижнего, потом три часа на полупустом автобусе. Последняя рейсовая «Икарус» ушла, и он вышел на обочине — с авоськой, в гражданском, без адреса."],["N","Посёлок у завода — три ряда пятиэтажек, покосившиеся гаражи, будка телефона-автомата со стёклами наполовину выбитыми. Знакомые подъезды, незнакомые лица в окнах."],["L","Сначала найду Фёдора. Он сосед, должен помнить семью. Без него я здесь никто и звать никак."],["N","Подъезд был тот же — облупившаяся краска, разбитый домофон, на мусорных баках кто-то нарисовал мелом звезду. Лёха поднялся по лестнице и позвонил."]],
+  post:[["N","Фёдор открыл в майке и с газетой, узнал не сразу — потом схватил за руку и держал долго. Расспрашивал про мать, про сестру, про то, жив ли отец. Помнил двор лучше, чем Лёха."],["N","Фёдор вспомнил твою семью, показал короткую дорогу к центру через пустырь и гаражи, и сунул в карман три рубля: «На хлеб, потом отдашь. Никому не говори, что я дал»."],["L","Хватит вспоминать. Пора искать работу, а не слёзы. Если Михалыч правда в деле — он меня найдёт."],["N","Лёха спустился по лестнице и пошёл через пустырь. Город был тот же — и совсем другой. Он ещё не знал, что это надолго."]]};
  const GARAGE={n:"Кооператив",pay:900,sp:[],steps:[{t:"drive",x:2653,y:1493,tx:"Доедь до гаражного кооператива"},{t:"enterArea",k:"garage",tx:"Войди в отдельный гаражный кооператив"},{t:"interact",k:"garage",id:"ledger",tx:"Осмотри журнал на верстаке"},{t:"exitArea",tx:"Выйди из кооператива"}],
-  pre:[["N","1998 год. Кабан назвал гаражи случайно — слишком быстро, чтобы это было случайностью."],["M","Доедешь до кооператива, найдёшь старшего и спросишь про журнал бокса."],["L","А если начнут задавать вопросы?"],["M","Скажи, что от меня. Здесь все знают, что это плохая примета."]]};
- const INTRO_EN={n:"The Return",s:["Talk to old Fyodor","Enter your home","Look at the family photograph","Leave the apartment"],pre:["Western edge of Arzamas. Autumn, 1991. The last bus has left.","First, find Fyodor. He should remember me."],post:["Fyodor remembers your family and points out the short road to town.","Enough looking back. Time to find work."]};
- const GARAGE_EN={n:"The Cooperative",s:["Drive to the garage cooperative","Enter the separate garage map","Check the ledger on the workbench","Leave the cooperative"],pre:["1998. Boar mentioned the garages by accident — too quickly for it to be an accident.","Drive to the cooperative, find the manager and ask about the unit ledger.","And if they start asking questions?","Say Mikhalych sent you. Everyone here knows that's a bad sign."]};
+  pre:[["N","1998 год. Кабан на последней встрече назвал гаражный кооператив слишком быстро — не запнулся, не подумал. Значит, он знал адрес заранее и ждал, когда Лёха спросит сам."],["M","Доедешь до кооператива на западной промзоне. Найдёшь старшего, спросишь про журнал боксов — не про деньги, не про общак. Именно про журнал. Старший всё поймёт и покажет нужный бокс."],["L","А если начнут задавать вопросы? Кто я, откуда, зачем?"],["M","Скажи, что от Михалыча. Здесь до сих пор помнят, и это плохая примета. Никто не переспросит."],["N","«Волга» завелась с третьей попытки и поехала по Коммунистов к промзоне. Освещение менялось: фонари через один, на асфальте — масляные разводы."]]};
+ const INTRO_EN={n:"The Return",s:["Talk to old Fyodor","Enter your home","Look at the family photograph","Leave the apartment"],pre:["Western edge of Arzamas. Autumn, 1991. Lyokha rode from the army to Kazan, to Nizhny, then three hours on a half-empty bus. The last Ikarus pulled away and he got out on the shoulder — with a string bag, in civilian clothes, no address.","The settlement by the factory — three rows of five-story blocks, leaning garages, a phone booth with half its panes smashed. Familiar stairwells, unfamiliar faces in the windows.","First, find Fyodor. He was our neighbor, he should remember the family. Without him I'm nobody here.","The entrance was the same — peeling paint, broken intercom, someone had chalked a star on the trash bins. Lyokha climbed the stairs and rang the bell."],post:["Fyodor opened the door in an undershirt with a newspaper, didn't recognize him at first — then grabbed his arm and held it a long time. He asked about his mother, his sister, whether his father was alive. He remembered the courtyard better than Lyokha did.","Fyodor remembered your family, pointed out the shortcut to town across the wasteland and the garages, and pressed three rubles into his pocket: Buy bread, pay me later. Don't tell anyone I gave you money.","Enough looking back. Time to find work, not tears. If Mikhalych really has something going, he'll find me.","Lyokha went down the stairs and crossed the wasteland. The city was the same — and completely different. He didn't yet know how long it would last."]};
+ const GARAGE_EN={n:"The Cooperative",s:["Drive to the garage cooperative","Enter the separate garage map","Check the ledger on the workbench","Leave the cooperative"],pre:["1998. At the last meeting Boar named the garage cooperative too quickly — no pause, no thinking. He knew the address beforehand and waited for Lyokha to ask.","Drive to the cooperative on the western industrial strip. Find the manager, ask about the unit ledger — not money, not the stash. The ledger. He'll understand and show you the right box.","And if they start asking questions? Who are you, where from, what do you want?","Say Mikhalych sent you. They still remember here, and that's a bad sign. No one will ask again.","The Volga started on the third try and rolled down Kommunistov toward the industrial zone. The light changed: every other streetlamp dead, oil streaks on the asphalt."]};
  MS.splice(0,0,INTRO);ENM.splice(0,0,INTRO_EN);MS.splice(8,0,GARAGE);ENM.splice(8,0,GARAGE_EN);
  const tg=[null,null,TG.gar,TG.dk,TG.bar,TG.stn,TG.rynok,TG.hot,TG.gar,TG.gar],cn=[0,0,0,2,3,4,5,6,0,0];
  MS.forEach((m,i)=>{const t=tg[i],st=m.steps.find(q=>q.t==="go"||q.t==="drive");if(st&&t){st.x=t[0];st.y=t[1]}m.sp=[];
@@ -1542,7 +1596,7 @@ setupMissions();
 /* Расширенная кинематографичная подача глав (доп. реплики) */
 const MX={
  0:{pre:[["N","На окраине уже стемнело. За последним автобусом поднялась пыль.","It is already dark on the outskirts. The last bus leaves a trail of dust."]]},
- 1:{pre:[["N","Колхозный рынок, 1991. Семечки, дым сигарет и чужие деньги.","Collective-farm market, 1991. Sunflower seeds, cigarette smoke and other people's money."],["G","Слышь, Лёх… отдам я Михалычу, честно. Только не сегодня.","Hey, Lyokh… I'll pay Mikhalych, honest. Just not today."]],
+ 1:{pre:[["N","Колхозный рынок, 1991. Семечки, дым сигарет и чужие деньги. Ряды стоят плотной стеной: бабки с зелёным, мужики с железом, ларьки с импортным ширпотребом. Между рядами — тележки, дети, собаки.","Collective-farm market, 1991. Sunflower seeds, cigarette smoke and other people's money. The stalls stand wall-to-wall: old women with greens, men with hardware, kiosks with imported goods. Between rows — carts, kids, dogs."],["G","Слышь, Лёх… отдам я Михалычу, честно. Только не сегодня. Кабан заберёт выручку — и я ему не скажу, что ты приходил. Понимаешь?","Hey, Lyokh… I'll pay Mikhalych, honest. Just not today. Boar will take the takings — and I won't tell him you came. You get it?"]],
     post:[["N","Кабан пока хозяин только на рынке. Но рынок — это уже город.","For now Boar rules only the market. But the market is already the town."]]},
  2:{pre:[["N","Зелёная девятка пахнет чужим куревом. Ключи в замке — значит, кто-то ждал.","The green Zhiguli smells of someone else's smoke. Keys in the ignition — someone was waiting."]]},
  3:{pre:[["N","ДК стоит с выбитыми окнами. За колоннами прячутся тени. Ты помнишь совет Михалыча и сначала заходишь в храм.","The Culture House has smashed windows. Shadows hide behind the pillars. You remember Mikhalych's advice and visit the church first."]]},
@@ -1552,44 +1606,36 @@ const MX={
  6:{pre:[["N","Чёрный бумер блестит, как гроб. Номера чужие, а замки целые.","The black Beamer gleams like a coffin. Foreign plates, intact locks."]]},
  7:{pre:[["N","Люкс «Арзамаса»: хрусталь, ковры и двое у двери.","The Arzamas suite: crystal, carpets and two men at the door."]]},
  8:{pre:[["N","На столе кооператива журнал с вырванными страницами. Кто-то искал конкретный бокс.","The cooperative ledger has pages torn out. Someone was looking for a particular unit."]]},
- 9:{pre:[["N","Гаражи. Ржавчина, масло и тишина перед выстрелом.","The garages. Rust, oil and the silence before a shot."]]}};
+ 9:{pre:[["N","Гаражи. Ржавчина, масло и тишина перед выстрелом. Кооператив стоит вдоль бетонного забора — пять рядов боксов, асфальт в масляных разводах. Вечер, ворота наполовину открыты.","The garages. Rust, oil and the silence before a shot. The cooperative stands along a concrete fence — five rows of boxes, asphalt stained with oil. Evening, the gates half open."]]}};
 /* Развилки 50/50: выбор 1 — светлый (+1 к карме), выбор 2 — тёмный (−1) */
 const CHOICES={
  1:CH("Гера вытирает руки о фартук: «Лёх, у меня семья. Дай срок до пятницы»","Gera wipes his hands on his apron: «Lyokh, I have a family. Give me till Friday»",
       "Простить долг","Forgive the debt","Забрать всё до копейки","Take it all to the kopeck",1,-1,"gera",
-      [["Лёха махнул рукой: «Живи». Гера выдохнул.","Lyokha waved: «Live.» Gera exhaled."],
-       ["Лёха вытряс ларёк до копейки. Гера смотрел в пол.","Lyokha shook the stall down to the last kopeck. Gera stared at the floor."]]),
+      [["Лёха махнул рукой: «Живи. Скажи Михалычу, что долг закрыт на моё слово. А Кабану скажи: я знаю, кто ты». Гера выдохнул, схватил Лёхину руку обеими ладонями и держал, пока Лёха не отнял.","Lyokha waved: «Live. Tell Mikhalych the debt is closed on my word. And tell Boar: I know who you are». Gera exhaled, grabbed Lyokha's hand with both palms, and held until Lyokha pulled it free."],["Лёха вытряс ларёк до копейки: выручку, сдачу, деньги из носка торговки. Гера молчал. На выходе Лёха услышал: за соседним рядом торговка спросила — «Жена, у тебя есть чем помочь?»","Lyokha shook the stall down to the last kopeck: the takings, the change, the money from a vendor's sock. Gera said nothing. On the way out Lyokha heard the vendor next door ask: «Wife, do you have anything to help with?»"]]),
  3:CH("Кабан на коленях: «Дай уйти, я всё верну!»","Boar on his knees: «Let me go, I'll return everything!»",
       "Отпустить","Let him go","Кончить на месте","Finish him right here",1,-1,"boar",
-      [["Лёха опустил ствол. Кабан попятился и исчез в темноте.","Lyokha lowered the gun. Boar backed off and vanished into the dark."],
-       ["Один выстрел. Больше Кабан никого не подставит.","One shot. Boar won't set anyone up again."]]),
+      [["Лёха опустил ствол: «Уходи и не мелькай в районе». Кабан попятился, споткнулся у колонн, поднялся и исчез в темноте без своей бригады. Через месяц у ДК нашли пустую «девятку» — Кабан уехал в Нижний.","Lyokha lowered the gun: «Go and don't show your face in the district». Boar backed up, stumbled by the columns, got up, and vanished into the dark without his crew. A month later an empty Zhiguli was found by the Culture House — Boar had left for Nizhny."],["Один выстрел. Кабан упал у колонн. Бригады не было, никто не видел. Больше Кабан никого не подставит. Ушёл сам, как пришёл на стрелку.","One shot. Boar fell by the columns. No crew, no witnesses. Boar won't set anyone up again. He came to the meeting alone and went out alone."]]),
  5:CH("Перевозчики собрали последнее. Брать больше нечего.","The carriers scraped together their last. There's nothing left to take.",
       "Взять как есть","Take what's there","Вытрясти вдвойне","Shake them double",1,-1,"tribute",
-      [["Лёха взял половину и кивнул: «Живите».","Lyokha took half and nodded: «Live.»"],
-       ["Лёха забрал всё. Кто-то остался без обеда, кто-то — без рейса.","Lyokha took it all. Someone lost lunch, someone lost a route."]]),
+      [["Лёха взял половину — ровно сколько просил Рыжий, не больше — и кивнул: «Живите. Следующий раз сам скажете, когда соберёте». Перевозчик, пожилой мужик в бушлате, не мог выговорить и только раскланялся.","Lyokha took half — exactly what Redhead asked, no more — and nodded: «Live. Next time you'll tell me yourself when you've collected». The carrier, an older man in a greatcoat, couldn't speak and only bowed."],["Лёха забрал всё до рубля. Водители стояли у автобуса молча, один курил на корточках, другой смотрел на Лёху так, что тот отвернулся первым. Кто-то остался без обеда, кто-то — без рейса, а кто-то — без бензина.","Lyokha took every ruble. The drivers stood by the bus in silence, one crouched smoking, another watched Lyokha until he looked away first. Someone lost lunch, someone lost a route, someone lost gas."]]),
  7:CH("Кабан шепчет: «Отпусти — и я скажу, где общак на самом деле».","Boar whispers: «Let me go and I'll tell you where the stash really is».",
       "Не верить ему","Don't trust him","Согласиться","Agree with him",1,-1,"boar2",
-      [["Лёха держал ствол под столом. Незнакомцам не верят.","Lyokha kept the gun under the table. Strangers aren't trusted."],
-       ["Лёха кивнул. Он уже знал, что предаст Кабана первым.","Lyokha nodded. He already knew he would betray Boar first."]]),
+      [["Лёха держал ствол под столом и слушал, как Кабан шепчет. Нет. Незнакомцам не верят, а Кабан стал незнакомцем ровно тогда, когда кончилась общая нужда. Кабан замолчал, сам заказал водку, выпил, и они разошлись без драки. Но не без слов.","Lyokha kept the gun under the table and listened to Boar whisper. No. Strangers aren't trusted, and Boar became a stranger the moment they stopped needing each other. Boar fell silent, ordered vodka himself, drank, and they left without a fight. But not without words."],["Лёха кивнул и положил ствол под стол. Кабан выдохнул и начал говорить про общак, про гаражи, про Михалыча. Лёха слушал и запоминал: к утру он знал больше, чем Кабан. Он уже знал, что предаст первым.","Lyokha nodded and set the gun under the table. Boar exhaled and started talking about the stash, the garages, Mikhalych. Lyokha listened and remembered: by morning he knew more than Boar. He already knew he'd betray him first."]]),
  9:CH("Общак на верстаке. Один звонок — и всё твоё.","The stash lies on the bench. One call and it's all yours.",
       "Оставить и уйти","Leave it and walk away","Забрать всё","Take it all",1,-1,"final",
-      [["Лёха закрыл дверь гаража и пошёл к окраине города.","Lyokha shut the garage door and walked toward the edge of town."],
-       ["Лёха взял общак. Руки не дрожали — и это пугало.","Lyokha took the stash. His hands did not shake — and that was the frightening part."]])};
+      [["Лёха закрыл дверь гаража, повернул ключ и сунул в карман. Пошёл к окраине через пустырь, не оглядываясь. Общак остался на верстаке. За воротами пахло полынью и дождём — пахло, как в детстве.","Lyokha shut the garage door, turned the key, put it in his pocket. Walked to the edge of town across the wasteland without looking back. The stash stayed on the workbench. Outside the gates it smelled of wormwood and rain — like childhood."],["Лёха взял общак, завернул в газету и понёс через промзону. Руки не дрожали — и это пугало больше, чем всё, что было до. Бумага пахла краской и керосином. В кармане — бита, в руках — чужие деньги, в голове — тишина.","Lyokha took the stash, wrapped it in newspaper, carried it across the industrial zone. His hands didn't shake — and that frightened him more than anything before. The paper smelled of paint and kerosene. In his pocket — a bat, in his hands — other people's money, in his head — silence."]])};
 /* Варианты реплик, если Кабан убит на стрелке (глава 3): его роль играет Рыжий. */
 const ALT={
- 4:{pre:[["L","Михалыч, где общак? После стрелки все следы ведут к тебе.","Mikhalych, where's the stash? After the meeting every trail leads to you."],
-        ["M","Не я это, Лёха. Заходи в «Ракушку», там всё объясню.","It wasn't me, Lyokha. Come to the Rakushka, I'll explain everything."]]},
- 5:{post:[["G","Лёха, Рыжий не чище Кабана. Ты опять не у тех работаешь.","Lyokha, Redhead is no better than Boar. You work for the wrong guys again."]]},
- 7:{pre:[["N","1997 год. Рыжий снял люкс в гостинице «Арзамас» и позвал тебя на разговор.","1997. Redhead booked a suite at Hotel Arzamas and called you in for a talk."],
-        ["R","Приходи один. Поговорим про общак. Возьми ствол.","Come alone. We'll talk about the stash. Bring a gun."]],
+ 4:{pre:[["N","Кабан мёртв, но общак не нашёлся. После стрелки все нити ведут к Михалычу: он знал про общак, он отправил Лёху на рынок, он назначил встречу у ДК.","Mikhalych, where's the stash? After the meeting every trail leads to you. You sent me to the market, you called the meeting, you told me to go alone.","Не я это, Лёха. Кабан сам полез, я предупреждал. Заходи в «Ракушку», я объясню, но не по телефону и не вgaraже. В баре — слышно меньше.","It wasn't me, Lyokha. Boar pushed it himself, I warned him. Come to the Rakushka, I'll explain — not on the phone, not in the garage. A bar is quieter."]]},
+ 5:{post:[["G","Лёха, я видел, как Рыжий после рейса садился в Кабанову «девятку». Не в свою. Они давно под одной крышей — просто Кабан громче и глупее, а Рыжий сидит сзади.","Lyokha, I saw Redhead get into Boar's Zhiguli after his run. Not his own. They've been under one roof for a long time — Boar is just louder and dumber, and Redhead sits in the back."],["L","И что мне теперь? К Михалычу вернуться?","And now what? Go back to Mikhalych?"],["G","К Михалычу не вернёшься: он в Сочи. К Кабану пойдёшь — у тебя ствол, и он это помнит. Остаётся ты сам. Или работаешь на одного и не знаешь, что второй тоже твой.","You can't go back to Mikhalych: he's in Sochi. You go to Boar — you have a gun and he remembers. That leaves you. Or you work for one and don't know the other is also yours."]]},
+ 7:{pre:[["N","1997 год. Кабан мёртв, и теперь Рыжий снял люкс в гостинице «Арзамас» — точно так же, как Кабан до этого. Тот же этаж, те же люди на ресепшене. Позвал Лёху на разговор, как когда-то звал Кабан.","1997. Boar is dead, and now Redhead booked a suite at Hotel Arzamas — exactly as Boar once did. Same floor, same men at reception. He called Lyokha in for a talk, just like Boar used to."],["R","Приходи один, без бригады. Поговорим про общак, про Михалыча, про то, кто теперь держит гаражи. Ствол возьми — не для меня, на всякий случай. Если не придёшь, я приеду к твоей матери.","Come alone, no crew. We'll talk about the stash, about Mikhalych, about who owns the garages now. Bring a gun — not for me, just in case. If you don't come, I'll come to your mother."]],
     post:[["R","Не стреляй! Михалыч жив. Он в Сочи, а общак в гаражах. Без меня туда не пройти.","Don't shoot! Mikhalych is alive. He's in Sochi, and the stash is in the garages. You can't get there without me."],
           ["L","Договорились. Один раз.","Deal. Just once."]]},
- 8:{pre:[["N","1998 год. Рыжий обмолвился о гаражах — слишком быстро, чтобы это было случайностью.","1998. Redhead mentioned the garages by accident — too quickly for it to be an accident."]]},
- 9:{post:[["R","Михалыч мне сводный брат, дурень! Мы вдвоём тебя разводили, а ты всё сделал сам.","Mikhalych is my half-brother, idiot! We played you together, and you did all the work."]]}};
+ 8:{pre:[["N","1998 год. Рыжий обмолвился о гаражах — слишком быстро, чтобы это было случайностью. Он не просто знал адрес: он ждал, пока Лёха сам спросит. Значит, он тоже видел записку. Или Кабан успел рассказать, прежде чем уехал.","1998. Redhead mentioned the garages too quickly for it to be an accident. He didn't just know the address — he was waiting for Lyokha to ask. That means he saw the note too. Or Boar told him before he left."]]},
+ 9:{post:[["R","Михалыч мне сводный брат, дурень! От одного отца — разные матери, разные города, одна работа. Мы вдвоём тебя разводили с самого начала: он подсылал, я прикрывал, а ты всё сам делал и сам за тебя решал.","Mikhalych is my half-brother, idiot! Same father, different mothers, different cities, one job. From day one the two of us played you: he sent you, I covered him, and you did everything yourself and decided for yourself."],["L","А теперь ты сядешь вместо Михалыча?","And now you sit in Mikhalych's chair?"],["R","Нет, Лёха. Я уеду. Здесь ты теперь сам себе и Михалыч, и Кабан, и я. Делай что хочешь, только общак не оставь — на нём всё держится.","No, Lyokha. I'm leaving. You're your own Mikhalych, Boar, and me now. Do what you want, just don't leave the stash — everything holds on it."]]}};
 const BOAR_CHOICE=CH("Рыжий шепчет: «Отпусти — и я скажу, где общак на самом деле».","Redhead whispers: «Let me go and I'll tell you where the stash really is».",
       "Не верить ему","Don't trust him","Согласиться","Agree with him",1,-1,"boar2",
-      [["Лёха держал ствол под столом. Рыжему не верят.","Lyokha kept the gun under the table. Redhead is not to be trusted."],
-       ["Лёха кивнул. Он уже знал, что предаст Рыжего первым.","Lyokha nodded. He already knew he would betray Redhead first."]]);
+      [["Лёха держал ствол под столом. Рыжему не верят — он шепчет те же слова, что Кабан, только тише и умнее. Они разошлись без выстрела, но и без доверия.","Lyokha kept the gun under the table. Redhead is not to be trusted — he whispers the same words as Boar, only quieter and smarter. They left without a shot, but without trust."],["Лёха кивнул и положил ствол. Рыжий выдохнул и начал говорить. Лёха слушал и запоминал: к утру знал больше, чем Рыжий. И уже знал, что предаст первым.","Lyokha nodded and set the gun down. Redhead exhaled and started talking. Lyokha listened and remembered: by morning he knew more than Redhead. And already knew he'd betray him first."]]);
 // Дело о двух ведомостях: исходные главы и их индексы сохраняются до кооператива.
 const casebook=[
  ["Копирка","flat","Вера","За август мать расписалась дважды. Второй раз уже после больницы.","На обороте листа отпечатался номер чужого автобуса."],
@@ -1627,6 +1673,26 @@ CHOICES[29]=CHOICES[9];delete CHOICES[9];MX[29]=MX[9];delete MX[9];
 CHOICES[16]=CH("Что оставить в копии ведомости?","What goes into the copy?","Закрыть адреса","Redact addresses","Отдать оригинал","Hand over the original",1,-1,"names");
 CHOICES[27]=CH("Редактор ждёт решения до рассвета.","The editor needs an answer.","Печатать факты","Print the evidence","Снять полосу","Pull the story",1,-1,"press");
 MS[29].post=[["N","Сейф открылся. Внутри лежали деньги, а под ними ведомость с подписями. На этот раз подпись требовалась от Лёхи."]];ENM[29].post=["The safe opens. Beneath the money lies a payroll sheet. This time Lyokha must sign."];
+/* Вооружённая стража у дверей зданий-целей: через миссию после первой,
+   только там, где по сюжету врагов ещё нет (нет спавна и нет шага kill).
+   Враги уже вооружены: замечают игрока, преследуют и стреляют на поражение. */
+(function placeDoorGuards(){
+ for(let i=2;i<MS.length;i+=2){
+  const m=MS[i];if(!m||m.sp.length||m.steps.some(s=>s.t==="kill"))continue;
+  let dx,dy;
+  const ea=m.steps.find(s=>s.t==="enterArea");
+  const door=ea&&DOORS.find(q=>q.k===ea.k);
+  if(door){dx=door.x;dy=door.y}
+  else{const st=m.steps.find(s=>s.t==="go"||s.t==="drive");if(st){dx=st.x;dy=st.y}}
+  if(!Number.isFinite(dx)||!Number.isFinite(dy))continue;
+  const n=3+Math.floor(rnd(4));m.guardFace=[];
+  for(let k=0;k<n;k++){const a=k/n*6.283+.4,r=30+(k%2)*12;
+   const p1=frRoad(dx+Math.cos(a)*r,dy+Math.sin(a)*r);
+   m.sp.push([p1[0],p1[1],p1[0],p1[1]]);
+   m.guardFace.push(Math.atan2(p1[1]-dy,p1[0]-dx))}
+  m.guards=n;
+ }
+})();
 if(had&&S.campaignVersion!==2&&S.mission>=9)S.mission+=20;S.campaignVersion=2;S.mission=Math.min(MS.length,S.mission);
 let last=0,accumulator=0,timeSave=0,RA=0;
 function recordPlayTime(dt){if(document.hidden||!P||!["play","cut"].includes(state)||!Number.isFinite(dt)||dt<=0||dt>1)return;const key=state==="cut"?"readSeconds":"playSeconds";S[key]=(S[key]||0)+dt;const chapter=(S.chapterSeconds||={});chapter[mi]=(chapter[mi]||0)+dt;if((timeSave+=dt)>=60){timeSave=0;save()}}
