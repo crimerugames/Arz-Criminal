@@ -600,7 +600,10 @@ function roadTraffic(c,dt,chase){
  else{s=Math.min(e.len-e.trim,s+ds);lanePoint(e,s,q)}
  /* Коллизия: не телепортируем машину и не обнуляем скорость резко — плавно тормозим
     (через followLimit она остановится заранее), а застрявшую машину пропускаем на выезд. */
- if(!stuck&&carCol(c,q.x,q.y,q.a)){c.v=Math.max(0,c.v-140*dt);return}
+ if(!stuck&&carCol(c,q.x,q.y,q.a)){const o=CONTACT.body;
+  /* ДТП двух машин трафика: одна врезается в другую — обе встают на 5 с, затем исчезают, чтобы не перекрыть дорогу. */
+  if(o&&Number.isInteger(o.m)&&aiCrashable(c)&&aiCrashable(o)){for(const w of[c,o]){w.stun=5;w.wreck=true;w.v=0;w.lat=0}fx((c.x+o.x)/2,(c.y+o.y)/2,"#c3ae77",4);SHK=Math.max(SHK,.1);snd(120,.08,"square",.04);return}
+  c.v=Math.max(0,c.v-140*dt);return}
  c.x=q.x;c.y=q.y;c.a=q.a;c.lat=0;
  if(t){t.u=s;if(s>=1){node.owner=0;c.edge=n;c.edgeS=n.trim;c.nextEdge=null;c.turn=null;c.trips=(c.trips||0)+1}}
  else{c.edgeS=s;if(s>=e.len-e.trim){if(otherOwner){c.v=Math.max(0,c.v-140*dt);return}node.owner=c.id;const b=lanePoint(n,n.trim,{}),control=turnControl(q.x,q.y,b.x,b.y,e.tx,e.ty,n.tx,n.ty),cx=control.x,cy=control.y;c.turn={ax:q.x,ay:q.y,bx:b.x,by:b.y,cx,cy,u:0,len:Math.max(1,Math.hypot(q.x-cx,q.y-cy)+Math.hypot(b.x-cx,b.y-cy))}}}}
@@ -726,7 +729,7 @@ addEventListener("keyup",e=>{keys[e.code]=false});
 let AC;function snd(f,d,type,v){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),gn=AC.createGain();o.type=type||"square";o.frequency.value=f;gn.gain.value=v||.05;gn.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(gn);gn.connect(AC.destination);o.onended=()=>{o.disconnect();gn.disconnect()};o.start();o.stop(AC.currentTime+d)}catch(e){}}
 
 /* ===== ИГРА ===== */
-let P,N=[],clock=540,E=[],B=[],SH=[],PK=[],BL=mk(WW,WH),cam={x:0,y:0,tx:0,ty:0,zm:1},msg="",msgT=0,hurt=0,deadT=0,tm=0,mi=0,si=0,mcar=null,cut=null,kills=0;
+let P,N=[],clock=540,E=[],B=[],SH=[],PK=[],BL=mk(WW,WH),cam={x:0,y:0,tx:0,ty:0,zm:1},msg="",msgT=0,hurt=0,deadT=0,tm=0,mi=0,si=0,mcar=null,cut=null,kills=0,pendingCut=null;
 let want=0,wantT=0,raidT=40,arrestT=0,copTheft=false;
 const AMMO=[];
 const YR=[1991,1991,1992,1993,1994,1995,1996,1997,1998,1999];
@@ -1113,6 +1116,10 @@ function startMission(i){mi=i;si=0;E=[];
  if(m.guards){msg=(S.lang==="en"?"Ambush at the door: "+m.guards+" armed guards block the way":"У входа засада: "+m.guards+" вооружённых преграждают путь");msgT=6}}
 function showCut(lines,done){const pages=[];const cw=Math.max(24,Math.floor((W-54)/5)),cl=Math.max(24,Math.floor((W-14)/5));for(const line of lines){if(line.o){pages.push(line);continue}const ru=wrap(line[1]||"",cw),en=wrap(line[2]||line[1]||"",cw),ml=6,count=Math.max(1,Math.ceil((S.lang==="en"?en:ru).length/ml));for(let i=0;i<count;i++)pages.push([line[0],ru.slice(i*ml,i*ml+ml).join(" "),en.slice(i*ml,i*ml+ml).join(" ")])}if(!pages.length){state="play";if(done)done();return}cut={l:pages,i:0,done};state="cut";SHK=0;hurt=0}
 function nextLine(){if(!cut)return;cut.i++;if(cut.i>=cut.l.length){const d=cut.done;cut=null;state="play";if(d)d()}}
+/* Отложить пролог главы до прибытия к первой цели; если цели-точки нет — показать сразу. */
+function armArriveCut(i){const pre=mcut(i,"pre");if(!pre.length){pendingCut=null;return}const t=target();if(!t||!Number.isFinite(t.x)||!Number.isFinite(t.y)){showCut(pre,null);pendingCut=null;return}pendingCut={ch:i,lines:pre,x:t.x,y:t.y}}
+/* Пролог новой главы играем, как только игрок доехал к первой цели (и не внутри здания). */
+function maybePlayArriveCut(){if(pendingCut&&P&&!AREA&&Math.hypot(P.x-pendingCut.x,P.y-pendingCut.y)<45){const pc=pendingCut;pendingCut=null;S.preShown=pc.ch;save();showCut(pc.lines,null)}}
 const CH=(q,qe,a,ae,b,be,va,vb,tag,say)=>({q:[q,qe],o:[[a,ae],[b,be]],v:[va,vb],tag:tag||"c",say:say||null});
 function choose(i){if(!cut)return;const ln=cut.l[cut.i];if(!ln||!ln.o)return;
  S.karma=(S.karma||0)+(ln.v[i]||0);S.tags=S.tags||{};S.tags[ln.tag]=i;save();snd(480,.12,"triangle",.05);
@@ -1143,8 +1150,8 @@ function checkMission(){const m=MS[mi];if(!m||!m.steps[si])return;const s=m.step
   l=l.concat(mcut(mi,"post")).concat([["N","Заработано: "+m.pay+" ₽","Earned: "+m.pay+" RUB"]]);
   showCut(l,()=>{
    if(nx>=MS.length){endGame();return}
-   S.preShown=nx;save();const pre=mcut(nx,"pre");
-   if(pre.length)showCut(pre,()=>startMission(nx));else startMission(nx)})}
+   /* Пролог новой главы показываем не сразу, а когда игрок приедет к первой цели — сцена совпадёт с местом. */
+   startMission(nx);armArriveCut(nx)})}
  else{msg=stx(mi,si);msgT=3}}
 function doMissionInteraction(){
  const m=MS[mi],s=m&&m.steps[si];if(!s)return false;
@@ -1245,9 +1252,16 @@ function runBus(c,dt){if(c.wait>0){c.wait-=dt;return}const next=(c.stopIndex+1)%
  c.v=Math.max(0,Math.min(c.v+10*dt,limit,Math.sqrt(Math.max(.5,30*left))));
  const delta=Math.min(left,c.v*dt),x=c.x,y=c.y,a=c.a;busPose(c,(c.al+delta)%busRoad.len);if(!stuck&&carCol(c,c.x,c.y,c.a)){c.x=x;c.y=y;c.a=a;c.v=Math.max(0,c.v-140*dt);return}c.al+=delta;
  if(left<=delta){c.stopIndex=next;c.al=busStops[next];c.v=0;c.wait=3}if(P.car===c){P.x=c.x;P.y=c.y;P.a=c.a;if(x!==c.x||y!==c.y)playerMoved()}}
-function updateTraffic(dt){for(const c of C){
- /* После ДТП — 5 секунд стоянки, потом машина возвращается на полосу и едет дальше. */
- if(c.stun>0){c.stun-=dt;c.v=0;c.lat=0;if(c.stun<=0){c.stun=0;c.edge=null;c.turn=null;c.nextEdge=null}continue}
+/* Обычная машина трафика, способная «въехать» в другую: едет по полосе, не авария, не спец. */
+const aiCrashable=c=>c.ai&&!c.drv&&!c.pol&&!c.route&&!c.chase&&!c.mc&&!c.free&&c.hp>0&&c.br!==2&&!(c.stun>0)&&!c.wreck&&!c.gone;
+/* После исчезнувшей машины выпускаем новую вдали от игрока — плотность трафика держится стабильной. */
+function refillTraffic(){for(let t=0;t<80;t++){const m=rm(),c=mkCar(m,0,0,0,pick(MD[m].cols));c.ai=true;c.dir=sr()<.5?1:-1;c.rp=sr()*RD.length|0;c.al=90+sr()*Math.max(1,RD[c.rp].len-180);setLane(c);if(ROADJ[c.rp].some(j=>Math.abs(j.al-c.al)<90))continue;if(P&&Math.hypot(c.x-P.x,c.y-P.y)<420)continue;if(C.some(o=>Math.hypot(o.x-c.x,o.y-c.y)<90))continue;if(carCol(c,c.x,c.y,c.a))continue;C.push(c);return}}
+function updateTraffic(dt){
+ /* Сначала фиксируем затор на текущих позициях (прошлого кадра), потом уже двигаем машины. */
+ detectAICrashes(dt);
+ for(const c of C){
+ /* После ДТП — 5 секунд стоянки: разбитые машины трафика исчезают, остальные возвращаются на полосу. */
+ if(c.stun>0){c.stun-=dt;c.v=0;c.lat=0;if(c.stun<=0){c.stun=0;if(c.wreck){c.wreck=false;c.gone=true;continue}c.edge=null;c.turn=null;c.nextEdge=null}continue}
  if(c.route){runBus(c,dt);continue}if(c.drv)continue;
  if(c.ai){
   const pdist=P?Math.hypot(P.x-c.x,P.y-c.y):1e9;
@@ -1269,6 +1283,20 @@ function updateTraffic(dt){for(const c of C){
    const brake=Math.max(10,c.v*1.05+10);
    if(gap<brake){const lim=Math.max(2,(gap-4)*1.1);if(c.v>lim)c.v=lim}}
  }
+ if(C.some(c=>c.gone)){const n=C.filter(c=>c.gone).length;C=C.filter(c=>!c.gone);for(let i=0;i<n;i++)refillTraffic()}
+}
+/* Столкновение машин трафика: кузова пересеклись и держатся так дольше доли секунды (затор) — обе встают на 5 с, затем исчезают. */
+function detectAICrashes(dt){
+ for(const c of C)c.ovl=false;
+ for(let i=0;i<C.length;i++){const a=C[i];if(!aiCrashable(a))continue;const ma=MD[a.m];
+  for(let j=i+1;j<C.length;j++){const b=C[j];if(!aiCrashable(b))continue;const mb=MD[b.m];
+   if(Math.abs(a.x-b.x)>ma.L+mb.L||Math.abs(a.y-b.y)>ma.L+mb.L)continue;
+   if(!boxContact(a.x,a.y,ma.L,ma.W,a.a,b.x,b.y,mb.L,mb.W,b.a))continue;
+   a.ovl=b.ovl=true;break}}
+ for(const c of C){
+  if(!aiCrashable(c)){c.crashT=0;continue}
+  if(c.ovl){if((c.crashT=(c.crashT||0)+dt)>0.3){c.stun=5;c.wreck=true;c.v=0;c.lat=0;fx(c.x,c.y,"#c3ae77",4);SHK=Math.max(SHK,.1);snd(120,.08,"square",.04)}}
+  else c.crashT=0}
 }
 function updateBullets(dt){
  for(let i=B.length-1;i>=0;i--){const b=B[i];let dead=safeZone()||(b.l-=dt)<=0,remaining=dt;
@@ -1360,6 +1388,7 @@ function update(dt){
  updateBullets(dt);
  for(let i=SH.length-1;i>=0;i--){const s=SH[i],h=trace(s.x,s.y,s.vx*dt,s.vy*dt,false);s.x+=s.vx*dt*h.t;s.y+=s.vy*dt*h.t;if(h.body){const dot=s.vx*h.nx+s.vy*h.ny;s.vx=(s.vx-2*dot*h.nx)*.35;s.vy=(s.vy-2*dot*h.ny)*.35;s.x+=h.nx*.05;s.y+=h.ny*.05}s.vx*=Math.exp(-4*dt);s.vy*=Math.exp(-4*dt);s.t-=dt;if(s.t<=0){if(!solid(s.x,s.y)){const b=BL.getContext("2d");b.fillStyle="#c8a030";b.fillRect(s.x|0,s.y|0,1,1)}recycle(SH,i,shellPool)}}
  if(state==="play"&&(!AREA||AREA.hostile))checkMission();
+ maybePlayArriveCut();
  const lx=P.car?Math.cos(P.car.a)*P.car.v*.35:0,ly=P.car?Math.sin(P.car.a)*P.car.v*.35:0;
  cam.zm=P.car&&!P.car.pax?1-.3*Math.min(1,Math.abs(P.car.v)/120):1;
  /* Отступ камеры считаем с учётом зума: иначе на скорости у края карты проступает пустота. */
